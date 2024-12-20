@@ -123,7 +123,7 @@ public class AssetsVideoStreamPusher {
 
         ByteBuffer inputBuffer = ByteBuffer.allocate(1024 * 1024); // 创建 1MB 缓冲区用于读取 H.264 帧
         int count =0;
-        while (count<100) {
+        while (true) {
             int sampleSize = extractor.readSampleData(inputBuffer, 0);
             if (sampleSize < 0) {
                 break;

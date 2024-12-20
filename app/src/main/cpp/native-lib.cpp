@@ -32,14 +32,29 @@ jint JNI_OnLoad(JavaVM *vm, void *unused) {
  * @param src_lineSize
  */
 void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize){
-    LOGI("renderFrame width=%d, height=%d src_lineSize=%d", width, height, src_lineSize)
+//    LOGI("renderFrame width=%d, height=%d src_lineSize=%d", width, height, src_lineSize)
     pthread_mutex_lock(&mutex);
     if(!window){
         pthread_mutex_unlock(&mutex);
         LOGE("renderFrame 0&&&&&&&&")
         return;
     }
-    LOGI("renderFrame 1")
+    int windowWidth = ANativeWindow_getWidth(window);
+    int windowHeight = ANativeWindow_getHeight(window);
+
+    // 计算缩放比例
+    float scaleX = (float)width / (float) windowWidth;
+    float scaleY = (float)height / (float) windowHeight;
+    float scale = fmax(scaleX, scaleY);
+
+    // 计算平移量
+    int newWidth = (int)(windowWidth*scale);
+    int newHeight = (int)(windowHeight*scale);
+    int offsetX = (width - newWidth) / 2;
+    int offsetY = (height - newHeight) / 2;
+    LOGI("renderFrame width=%d, height=%d, newWidth=%d, newHeight=%d, scale=%f, offsetX=%d, offsetY=%d, windowWidth=%d, windowHeight=%d,",
+         width, height, newWidth, newHeight, scale, offsetX, offsetY, windowWidth, windowHeight)
+
     //设置窗口属性
     int result = ANativeWindow_setBuffersGeometry(
             window,
@@ -52,7 +67,6 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize){
         pthread_mutex_unlock(&mutex);
         return;
     }
-    LOGI("renderFrame 2")
     ANativeWindow_Buffer windowBuffer;
     if(ANativeWindow_lock(window,&windowBuffer,nullptr)){
         ANativeWindow_release(window);
@@ -61,22 +75,17 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize){
         LOGI("renderFrame 3")
         return;
     }
-    LOGI("renderFrame 4")
     //填充buffer
     uint8_t *dst_data = static_cast<uint8_t *>(windowBuffer.bits);
     int dst_lineSize = windowBuffer.stride*4;//RGBA
-    LOGI("renderFrame 5")
     for (int i = 0; i < windowBuffer.height; ++i) {
-        //拷贝一行
         memcpy(dst_data+i*dst_lineSize,
                 src_data+i*src_lineSize,
                 dst_lineSize
                 );
     }
-    LOGI("renderFrame 6")
     ANativeWindow_unlockAndPost(window);
     pthread_mutex_unlock(&mutex);
-    LOGI("renderFrame 7")
 }
 
 

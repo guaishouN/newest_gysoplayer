@@ -208,14 +208,20 @@ void GySoPlayer::_start() {
             }
         } else if(ret == AVERROR_EOF){
             //表示读取完毕
+            LOGE("avFormatContext finished file reading!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11")
+            break;
         }else{
             break;
         }
     }
     //释放
     isPlaying = 0;
-    videoChannel->stop();
-    audioChannel->stop();
+    if(videoChannel){
+        videoChannel->stop();
+    }
+    if(audioChannel){
+        audioChannel->stop();
+    }
 }
 
 void GySoPlayer::setRenderCallback(RenderCallback renderCallback){
