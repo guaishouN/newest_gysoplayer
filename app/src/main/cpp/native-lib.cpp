@@ -15,9 +15,9 @@ extern "C"{
 #include <libswresample/swresample.h>
 }
 
-JavaVM *javaVM = 0;
-GySoPlayer *gysoplayer = 0;
-ANativeWindow *window = 0;
+JavaVM *javaVM = nullptr;
+GySoPlayer *gysoplayer = nullptr;
+ANativeWindow *window = nullptr;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 jint JNI_OnLoad(JavaVM *vm, void *unused) {
     javaVM = vm;
@@ -33,36 +33,50 @@ jint JNI_OnLoad(JavaVM *vm, void *unused) {
  */
 void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize){
     LOGI("renderFrame width=%d, height=%d src_lineSize=%d", width, height, src_lineSize)
-//    pthread_mutex_lock(&mutex);
-//    if(!window){
-//        pthread_mutex_unlock(&mutex);
-//    }
-//    //设置窗口属性
-//    ANativeWindow_setBuffersGeometry(
-//            window,
-//            width,
-//            height,
-//            WINDOW_FORMAT_RGBA_8888
-//            );
-//    ANativeWindow_Buffer windowBuffer;
-//    if(ANativeWindow_lock(window,&windowBuffer,0)){
-//        ANativeWindow_release(window);
-//        window = 0;
-//        pthread_mutex_unlock(&mutex);
-//        return;
-//    }
-//    //填充buffer
-//    uint8_t *dst_data = static_cast<uint8_t *>(windowBuffer.bits);
-//    int dst_lineSize = windowBuffer.stride*4;//RGBA
-//    for (int i = 0; i < windowBuffer.height; ++i) {
-//        //拷贝一行
-//        memcpy(dst_data+i*dst_lineSize,
-//                src_data+i*src_lineSize,
-//                dst_lineSize
-//                );
-//    }
-//    ANativeWindow_unlockAndPost(window);
-//    pthread_mutex_unlock(&mutex);
+    pthread_mutex_lock(&mutex);
+    if(!window){
+        pthread_mutex_unlock(&mutex);
+        LOGE("renderFrame 0&&&&&&&&")
+        return;
+    }
+    LOGI("renderFrame 1")
+    //设置窗口属性
+    int result = ANativeWindow_setBuffersGeometry(
+            window,
+            width,
+            height,
+            WINDOW_FORMAT_RGBA_8888
+            );
+    if (result != 0) {
+        LOGE("Failed to set buffers geometry, error code: %d", result);
+        pthread_mutex_unlock(&mutex);
+        return;
+    }
+    LOGI("renderFrame 2")
+    ANativeWindow_Buffer windowBuffer;
+    if(ANativeWindow_lock(window,&windowBuffer,nullptr)){
+        ANativeWindow_release(window);
+        window = nullptr;
+        pthread_mutex_unlock(&mutex);
+        LOGI("renderFrame 3")
+        return;
+    }
+    LOGI("renderFrame 4")
+    //填充buffer
+    uint8_t *dst_data = static_cast<uint8_t *>(windowBuffer.bits);
+    int dst_lineSize = windowBuffer.stride*4;//RGBA
+    LOGI("renderFrame 5")
+    for (int i = 0; i < windowBuffer.height; ++i) {
+        //拷贝一行
+        memcpy(dst_data+i*dst_lineSize,
+                src_data+i*src_lineSize,
+                dst_lineSize
+                );
+    }
+    LOGI("renderFrame 6")
+    ANativeWindow_unlockAndPost(window);
+    pthread_mutex_unlock(&mutex);
+    LOGI("renderFrame 7")
 }
 
 
