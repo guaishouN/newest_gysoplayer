@@ -83,6 +83,7 @@ class MainActivity : AppCompatActivity() {
         gySoPlayer.prepare()
         gySoPlayer.setOnStatCallback(object : OnStatCallback {
             override fun onPrepared() {
+
                 runOnUiThread {
                     Toast.makeText(
                         this@MainActivity,

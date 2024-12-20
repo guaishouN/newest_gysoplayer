@@ -58,8 +58,8 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize){
     //设置窗口属性
     int result = ANativeWindow_setBuffersGeometry(
             window,
-            width,
-            height,
+            windowWidth,
+            windowHeight,
             WINDOW_FORMAT_RGBA_8888
             );
     if (result != 0) {
@@ -78,8 +78,8 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize){
     //填充buffer
     uint8_t *dst_data = static_cast<uint8_t *>(windowBuffer.bits);
     int dst_lineSize = windowBuffer.stride*4;//RGBA
-    for (int i = 0; i < windowBuffer.height; ++i) {
-        memcpy(dst_data+i*dst_lineSize,
+    for (int i = 0; i < height; ++i) {
+        memcpy(dst_data+(i+200)*dst_lineSize,
                 src_data+i*src_lineSize,
                 dst_lineSize
                 );
@@ -105,6 +105,7 @@ JNIEXPORT void JNICALL
 Java_com_gyso_gysoplayerapplication_GySoPlayer_startNative(JNIEnv *env, jobject thiz) {
     if(gysoplayer){
         gysoplayer->start();
+
     }
 }
 

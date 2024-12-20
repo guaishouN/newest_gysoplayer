@@ -110,12 +110,19 @@ void VideoChannel::video_play(){
     uint8_t *dst_data[4];
     int dst_linesize[4];
     AVFrame *frame = 0;
+    int winWidth = 700;
+    int winHeight = 700;
+    float scaleX = (float)pContext->width / (float) winWidth;
+    float scaleY = (float)pContext->height / (float) winHeight;
+    float scale = fmax(scaleX, scaleY);
+    int newWidth = (int)(pContext->width/scale);
+    int newHeight = (int)(pContext->height/scale);
     SwsContext *swsContext = sws_getContext(
             pContext->width,
             pContext->height,
             pContext->pix_fmt,
-            pContext->width,
-            pContext->height,
+            newWidth,
+            newHeight,
             AV_PIX_FMT_RGBA,
             SWS_BILINEAR,
             NULL,
@@ -126,8 +133,8 @@ void VideoChannel::video_play(){
     av_image_alloc(
             dst_data,
             dst_linesize,
-            pContext->width,
-            pContext->height,
+            newWidth,
+            newHeight,
             AV_PIX_FMT_RGBA,
             1
             );
@@ -191,8 +198,8 @@ void VideoChannel::video_play(){
 //      //宽高数据
         renderCallback(
                 dst_data[0],
-                pContext->width,
-                pContext->height,
+                newWidth,
+                newHeight,
                 dst_linesize[0]
                 );
         releaseAVFrame(&frame);

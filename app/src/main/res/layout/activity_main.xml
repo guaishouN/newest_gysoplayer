@@ -7,8 +7,8 @@
     tools:context=".MainActivity">
     <SurfaceView
         android:id="@+id/surfaceview"
-        android:layout_width="100dp"
-        android:layout_height="200dp"
+        android:layout_width="400dp"
+        android:layout_height="400dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"/>
     <TextView
