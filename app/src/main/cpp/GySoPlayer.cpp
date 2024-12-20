@@ -166,6 +166,7 @@ void GySoPlayer::start() {
     isPlaying=1;
     if(videoChannel){
         videoChannel->setAudioChannel(audioChannel);
+        videoChannel->setWinWidthAndHeight(this->winWidth, this->winHeight);
         videoChannel->start();
     }
     if(audioChannel){
@@ -173,6 +174,12 @@ void GySoPlayer::start() {
         audioChannel->start();
     }
     pthread_create(&pThread_start, 0, startInChildThread, this);
+}
+
+void GySoPlayer::setWinWidthAndHeight(int winWidth, int winHeight) {
+    LOGI("GySoPlayer setWinWidthAndheight winWidth=%d winHeight=%d", winWidth, winHeight)
+    this->winWidth = winWidth;
+    this->winHeight = winHeight;
 }
 
 /**

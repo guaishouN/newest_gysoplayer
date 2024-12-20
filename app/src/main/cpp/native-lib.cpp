@@ -42,19 +42,6 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize){
     int windowWidth = ANativeWindow_getWidth(window);
     int windowHeight = ANativeWindow_getHeight(window);
 
-    // 计算缩放比例
-    float scaleX = (float)width / (float) windowWidth;
-    float scaleY = (float)height / (float) windowHeight;
-    float scale = fmax(scaleX, scaleY);
-
-    // 计算平移量
-    int newWidth = (int)(windowWidth*scale);
-    int newHeight = (int)(windowHeight*scale);
-    int offsetX = (width - newWidth) / 2;
-    int offsetY = (height - newHeight) / 2;
-    LOGI("renderFrame width=%d, height=%d, newWidth=%d, newHeight=%d, scale=%f, offsetX=%d, offsetY=%d, windowWidth=%d, windowHeight=%d,",
-         width, height, newWidth, newHeight, scale, offsetX, offsetY, windowWidth, windowHeight)
-
     //设置窗口属性
     int result = ANativeWindow_setBuffersGeometry(
             window,
@@ -103,9 +90,17 @@ Java_com_gyso_gysoplayerapplication_GySoPlayer_prepareNative(JNIEnv *env, jobjec
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_gyso_gysoplayerapplication_GySoPlayer_startNative(JNIEnv *env, jobject thiz) {
+    LOGI("startNative setWinWidthAndHeight")
     if(gysoplayer){
+        pthread_mutex_lock(&mutex);
+        if (window) {
+            LOGI("startNative setWinWidthAndHeight111")
+            int windowWidth = ANativeWindow_getWidth(window);
+            int windowHeight = ANativeWindow_getHeight(window);
+            gysoplayer->setWinWidthAndHeight(windowWidth, windowHeight);
+        }
+        pthread_mutex_unlock(&mutex);
         gysoplayer->start();
-
     }
 }
 
@@ -133,6 +128,7 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_gyso_gysoplayerapplication_GySoPlayer_setSurfaceNative(JNIEnv *env, jobject thiz,
                                                                  jobject surface) {
+    LOGI("setSurfaceNative")
     pthread_mutex_lock(&mutex);
     //释放之前的显示窗口
     if(window){
@@ -141,6 +137,11 @@ Java_com_gyso_gysoplayerapplication_GySoPlayer_setSurfaceNative(JNIEnv *env, job
     }
     //创建新window
     window = ANativeWindow_fromSurface(env,surface);
+    if(gysoplayer){
+        int windowWidth = ANativeWindow_getWidth(window);
+        int windowHeight = ANativeWindow_getHeight(window);
+        gysoplayer->setWinWidthAndHeight(windowWidth, windowHeight);
+    }
     pthread_mutex_unlock(&mutex);
 }
 

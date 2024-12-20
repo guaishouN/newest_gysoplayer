@@ -4,7 +4,8 @@
 
 #ifndef GYSOFFMPEGAPPLICATION_VIDEOCHANNEL_H
 #define GYSOFFMPEGAPPLICATION_VIDEOCHANNEL_H
-
+#include <android/log.h>
+#include "macro.h"
 extern "C"{
 
 };
@@ -22,8 +23,10 @@ class VideoChannel : public BaseChannel{
          void video_decode();
          void video_play();
          void setRenderCallback(RenderCallback renderCallback);
-
-    void setAudioChannel(AudioChannel *pChannel);
+        int winWidth = 500;
+        int winHeight = 500;
+        void setAudioChannel(AudioChannel *pChannel);
+        void setWinWidthAndHeight(int winWidth, int winHeight);
 
 private:
     pthread_t pid_video_decode;

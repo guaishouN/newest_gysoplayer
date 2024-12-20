@@ -47,15 +47,15 @@ class MainActivity : AppCompatActivity() {
 
         // Example of a call to a native method
         binding.sampleText.text = "video play develop"
-//        Thread {
-//            val assetsVideoStreamer =
-//                AssetsVideoStreamPusher(
-//                    applicationContext,
-//                    "demo.mp4",
-//                    10002
-//                )
-//            assetsVideoStreamer.startServer()
-//        }.start()
+        Thread {
+            val assetsVideoStreamer =
+                AssetsVideoStreamPusher(
+                    applicationContext,
+                    "demo.mp4",
+                    10002
+                )
+            assetsVideoStreamer.startServer()
+        }.start()
 
         prepareVideo()
     }
@@ -77,67 +77,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
         Log.i(TAG, "prepareVideo: videofile len=" + file.length())
-        gySoPlayer = GySoPlayer(file.absolutePath)
-//        gySoPlayer = GySoPlayer("tcp://127.0.0.1:10002")
-        gySoPlayer.setSurfaceView(binding.surfaceview)
-        gySoPlayer.prepare()
-        gySoPlayer.setOnStatCallback(object : OnStatCallback {
-            override fun onPrepared() {
-
-                runOnUiThread {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "准备播放完毕",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                gySoPlayer.start()
-            }
-
-            override fun onError(errorCode: Int) {
-                runOnUiThread {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "播放视频出错了!",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-
-            @SuppressLint("SetTextI18n")
-            override fun onProgress(currentPlayTime: Int) {
-                //底层返回进度更新
-
-            }
-        })
-    }
-
-    /**
-     * 点击播放
-     * @param view view
-     */
-    fun playVideo(view: View?) {
-        gySoPlayer.start()
-    }
-
-    @SuppressLint("SetTextI18n")
-    fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-
-    }
-
-    private fun getMinutes(duration: Int): String {
-        val minutes = duration / 60
-        if (minutes <= 9) {
-            return "0$minutes"
-        }
-        return "" + minutes
-    }
-
-    private fun getSeconds(duration: Int): String {
-        val seconds = duration % 60
-        if (seconds <= 9) {
-            return "0$seconds"
-        }
-        return "" + seconds
+        gySoPlayer = GySoPlayer(binding.surfaceview)
+        gySoPlayer.play(file.absolutePath)
+//        gySoPlayer.play("tcp://127.0.0.1:10002")
     }
 }

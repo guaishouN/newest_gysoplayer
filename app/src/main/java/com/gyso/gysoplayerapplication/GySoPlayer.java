@@ -36,18 +36,16 @@ public class GySoPlayer implements SurfaceHolder.Callback {
     private String dataSource;
     private OnStatCallback onStatCallback;
     private SurfaceHolder surfaceHolder;
-    public GySoPlayer(String dataSource){
-        this.dataSource = dataSource;
+    private boolean isSurfaceReady = false;
+    public GySoPlayer(SurfaceView surfaceView){
+        setSurfaceView(surfaceView);
     }
 
-    public void prepare(){
+
+    public void play(String dataSource){
         if (!TextUtils.isEmpty(dataSource)){
             prepareNative(dataSource);
         }
-    }
-
-    public void start(){
-        startNative();
     }
 
     public void stop(){
@@ -56,14 +54,13 @@ public class GySoPlayer implements SurfaceHolder.Callback {
     public void release(){
         releaseNative();
     }
-    void setSurfaceView(SurfaceView surfaceView){
+    private void setSurfaceView(SurfaceView surfaceView){
         if (null!=surfaceHolder){
             surfaceHolder.removeCallback(this);
         }
         surfaceHolder=surfaceView.getHolder();
         surfaceHolder.addCallback(this);
     }
-
 
     /**
      * jni反射调用接口
@@ -72,6 +69,17 @@ public class GySoPlayer implements SurfaceHolder.Callback {
         if (null!=onStatCallback){
             onStatCallback.onPrepared();
         }
+        new Thread(()->{
+            while (!isSurfaceReady){
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            startNative();
+        }).start();
+
     }
 
     /**
@@ -90,7 +98,7 @@ public class GySoPlayer implements SurfaceHolder.Callback {
      * @param currentPlayTime 当前播放时间
      */
     public void onProgress(int currentPlayTime){
-        Log.e(TAG, "onProgress:currentPlayTime["+currentPlayTime+"]");
+//        Log.e(TAG, "onProgress:currentPlayTime["+currentPlayTime+"]");
         if(onStatCallback!=null){
             this.onStatCallback.onProgress(currentPlayTime);
         }
@@ -110,6 +118,7 @@ public class GySoPlayer implements SurfaceHolder.Callback {
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         Log.i(TAG, "surfaceChanged: setSurfaceNative");
+        isSurfaceReady = true;
         setSurfaceNative(surfaceHolder.getSurface());
     }
 

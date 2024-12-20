@@ -47,6 +47,11 @@ public:
 
     void stop();
 
+    void setWinWidthAndHeight(int winWidth, int winHeight);
+
+    int winWidth = 500;
+    int winHeight = 500;
+
 private:
     char * videoPath = nullptr;
     bool isPlaying;

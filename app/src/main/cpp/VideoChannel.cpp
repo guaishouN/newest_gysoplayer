@@ -110,8 +110,6 @@ void VideoChannel::video_play(){
     uint8_t *dst_data[4];
     int dst_linesize[4];
     AVFrame *frame = 0;
-    int winWidth = 700;
-    int winHeight = 700;
     float scaleX = (float)pContext->width / (float) winWidth;
     float scaleY = (float)pContext->height / (float) winHeight;
     float scale = fmax(scaleX, scaleY);
@@ -212,4 +210,10 @@ void VideoChannel::video_play(){
 
 void VideoChannel::setAudioChannel(AudioChannel *pChannel) {
     this->audioChannel = pChannel;
+}
+
+void VideoChannel::setWinWidthAndHeight(int winWidth, int winHeight) {
+    LOGI("VideoChannel setWinWidthAndheight winWidth=%d winHeight=%d", winWidth, winHeight)
+    this->winWidth = winWidth;
+    this->winHeight = winHeight;
 }
