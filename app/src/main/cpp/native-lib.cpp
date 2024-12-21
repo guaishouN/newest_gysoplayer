@@ -66,6 +66,9 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize, int
     //填充buffer
     uint8_t *dst_data = static_cast<uint8_t *>(windowBuffer.bits);
     int dst_lineSize = windowBuffer.stride*4;//RGBA
+    // 清空窗口缓冲区（黑色背景）
+    memset(dst_data, 0, windowBuffer.height * dst_lineSize);
+
     int target_size = fmin(src_lineSize,dst_lineSize);
     uint8_t *start_position = dst_data+offset_width*4;
     for (int i = 0; i < height; ++i) {

@@ -140,10 +140,12 @@ public class GySoPlayer implements SurfaceHolder.Callback {
     public void seek(int playProgress) {
         seekNative(playProgress);
     }
+
     interface OnStatCallback{
         void onPrepared();
         void onError(int errorCode);
         void onProgress(int currentPlayTime);
+        void onFinished();
     }
 
     /**

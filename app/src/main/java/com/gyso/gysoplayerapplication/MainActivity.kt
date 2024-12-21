@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.Log
 import android.view.View
 import android.widget.SeekBar
@@ -20,7 +22,8 @@ class MainActivity : AppCompatActivity() {
     var permissionGrander: Boolean = false
     lateinit var permissionUtil: PermissionUtil
     lateinit var gySoPlayer: GySoPlayer
-
+    lateinit var handlerThread: HandlerThread
+    lateinit var handler: Handler
     companion object {
         const val TAG = "MainActivity"
     }
@@ -33,6 +36,9 @@ class MainActivity : AppCompatActivity() {
         }, {
             permissionGrander = false
         })
+        handlerThread = HandlerThread("gysoplayer handler")
+        handlerThread.start()
+        handler = Handler(handlerThread.looper)
         if (Build.VERSION.SDK_INT >= 33) {
             if (permissionUtil.hasStoragePermission(this, PermissionUtil.TOTAL_PERMISSION_13)) {
                 permissionGrander = true
@@ -64,7 +70,7 @@ class MainActivity : AppCompatActivity() {
      * 准备video
      */
     private fun prepareVideo() {
-        val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
+        val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "demo.mp4";
         Log.i(TAG, "prepareVideo: videofile filePath=" + filePath)
         val file = File(filePath)
         if (!file.exists()) {
@@ -80,5 +86,17 @@ class MainActivity : AppCompatActivity() {
         gySoPlayer = GySoPlayer(binding.surfaceview)
         gySoPlayer.play(file.absolutePath)
 //        gySoPlayer.play("tcp://127.0.0.1:10002")
+        handler.post{
+            Thread.sleep(5*1000)
+            gySoPlayer.stop()
+            val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final2.mp4";
+            val file = File(filePath)
+            gySoPlayer.play(file.absolutePath)
+            Thread.sleep(5*1000)
+            gySoPlayer.stop()
+            gySoPlayer.play("tcp://127.0.0.1:10002")
+//            Thread.sleep(10*1000)
+//            gySoPlayer.stop()
+        }
     }
 }
