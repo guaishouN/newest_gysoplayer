@@ -94,11 +94,9 @@ class MainActivity : AppCompatActivity() {
             gySoPlayer.play(file.absolutePath)
             Thread.sleep(5*1000)
             gySoPlayer.stop()
-            val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final.mp4";
+            val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
             val file = File(filePath)
             gySoPlayer.play(file.absolutePath)
-            Thread.sleep(5*1000)
-            gySoPlayer.stop()
         }
     }
 }
