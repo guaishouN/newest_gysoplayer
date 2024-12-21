@@ -13,7 +13,7 @@ extern "C"{
 #include "BaseChannel.h"
 #include "AudioChannel.h"
 
-typedef void (*RenderCallback)(uint8_t *,int,int,int);
+typedef void (*RenderCallback)(uint8_t *,int,int,int,int,int);
 class VideoChannel : public BaseChannel{
     public:
          VideoChannel(int stream_index,AVCodecContext *pContext,AVRational time_base, int fps);

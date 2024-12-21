@@ -260,32 +260,6 @@ int swr_alloc_set_opts2(struct SwrContext **ps,
                         const AVChannelLayout *out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
                         const AVChannelLayout *in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
                         int log_offset, void *log_ctx);
-
-/**
- * Allocate SwrContext if needed and set/reset common parameters.
- *
- * This function does not require s to be allocated with swr_alloc(). On the
- * other hand, swr_alloc() can use swr_alloc_set_opts() to set the parameters
- * on the allocated context.
- *
- * @param s               existing Swr context if available, or NULL if not
- * @param out_ch_layout   output channel layout (AV_CH_LAYOUT_*)
- * @param out_sample_fmt  output sample format (AV_SAMPLE_FMT_*).
- * @param out_sample_rate output sample rate (frequency in Hz)
- * @param in_ch_layout    input channel layout (AV_CH_LAYOUT_*)
- * @param in_sample_fmt   input sample format (AV_SAMPLE_FMT_*).
- * @param in_sample_rate  input sample rate (frequency in Hz)
- * @param log_offset      logging level offset
- * @param log_ctx         parent logging context, can be NULL
- *
- * @see swr_init(), swr_free()
- * @return NULL on error, allocated context otherwise
- */
-//struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
-//                                      int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
-//                                      int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
-//                                      int log_offset, void *log_ctx);
-
 /**
  * @}
  *

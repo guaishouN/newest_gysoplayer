@@ -115,6 +115,8 @@ void VideoChannel::video_play(){
     float scale = fmax(scaleX, scaleY);
     int newWidth = (int)(pContext->width/scale);
     int newHeight = (int)(pContext->height/scale);
+    int offset_width = (winWidth-newWidth)/2;
+    int offset_height = (winHeight-newHeight)/2;
     SwsContext *swsContext = sws_getContext(
             pContext->width,
             pContext->height,
@@ -175,7 +177,7 @@ void VideoChannel::video_play(){
             }
         }else{
             double audio_time = audioChannel->audio_time;
-            double time_diff = video_time -audio_time;
+            double time_diff = video_time - audio_time;
             if(time_diff>0){
                 //视频时间比音频时间大，等音频
                 if(time_diff>1){
@@ -198,7 +200,9 @@ void VideoChannel::video_play(){
                 dst_data[0],
                 newWidth,
                 newHeight,
-                dst_linesize[0]
+                dst_linesize[0],
+                offset_width,
+                offset_height
                 );
         releaseAVFrame(&frame);
     }

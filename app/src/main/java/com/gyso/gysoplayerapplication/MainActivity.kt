@@ -64,7 +64,7 @@ class MainActivity : AppCompatActivity() {
      * 准备video
      */
     private fun prepareVideo() {
-        val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "demo.mp4";
+        val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
         Log.i(TAG, "prepareVideo: videofile filePath=" + filePath)
         val file = File(filePath)
         if (!file.exists()) {

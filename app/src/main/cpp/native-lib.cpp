@@ -31,8 +31,9 @@ jint JNI_OnLoad(JavaVM *vm, void *unused) {
  * @param height
  * @param src_lineSize
  */
-void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize){
-//    LOGI("renderFrame width=%d, height=%d src_lineSize=%d", width, height, src_lineSize)
+void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize, int offset_width, int offset_height){
+    LOGI("renderFrame width=%d, height=%d src_lineSize=%d, offset_width=%d, offset_height=%d",
+         width, height, src_lineSize, offset_width, offset_height)
     pthread_mutex_lock(&mutex);
     if(!window){
         pthread_mutex_unlock(&mutex);
@@ -65,10 +66,12 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize){
     //填充buffer
     uint8_t *dst_data = static_cast<uint8_t *>(windowBuffer.bits);
     int dst_lineSize = windowBuffer.stride*4;//RGBA
+    int target_size = fmin(src_lineSize,dst_lineSize);
+    uint8_t *start_position = dst_data+offset_width*4;
     for (int i = 0; i < height; ++i) {
-        memcpy(dst_data+(i+200)*dst_lineSize,
+        memcpy(start_position+(i+offset_height)*dst_lineSize,
                 src_data+i*src_lineSize,
-                dst_lineSize
+               target_size
                 );
     }
     ANativeWindow_unlockAndPost(window);
