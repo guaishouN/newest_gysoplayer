@@ -69,17 +69,21 @@ public class GySoPlayer implements SurfaceHolder.Callback {
         if (null!=onStatCallback){
             onStatCallback.onPrepared();
         }
+        delayMs(500);
         new Thread(()->{
             while (!isSurfaceReady){
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+                delayMs(100);
             }
             startNative();
         }).start();
+    }
 
+    private void delayMs(int delayTime){
+        try {
+            Thread.sleep(delayTime);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

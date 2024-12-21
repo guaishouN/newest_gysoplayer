@@ -33,7 +33,7 @@ public:
     void prepare();
 
     void _prepare();
-    void fff_prepare();
+    void show_img(AVCodecContext *pContext, AVFrame *frame);
 
     void start();
 
@@ -46,6 +46,8 @@ public:
     int getDuration();
 
     void stop();
+
+    int deal_picture_file();
 
     void setWinWidthAndHeight(int winWidth, int winHeight);
 
