@@ -317,10 +317,10 @@ void GySoPlayer::start() {
     pthread_create(&pThread_start, 0, startInChildThread, this);
 }
 
-void GySoPlayer::setWinWidthAndHeight(int winWidth, int winHeight) {
-    LOGI("GySoPlayer setWinWidthAndheight winWidth=%d winHeight=%d", winWidth, winHeight)
-    this->winWidth = winWidth;
-    this->winHeight = winHeight;
+void GySoPlayer::setWinWidthAndHeight(int _winWidth, int _winHeight) {
+    LOGI("GySoPlayer setWinWidthAndheight _winWidth=%d _winHeight=%d", _winWidth, _winHeight)
+    this->winWidth = _winWidth;
+    this->winHeight = _winHeight;
 }
 
 /**

@@ -75,14 +75,11 @@ void VideoChannel::video_decode() {
         /**
          * 队列控制
          */
-        if(isPlaying && frames.size()>100){
+        if(frames.size() > 100){
             av_usleep(10*1000);
             continue;
         }
         int ret = packets.pop(packet);
-        if(!isPlaying){
-            break;
-        }
         if(!ret){
             continue;
         }
@@ -109,7 +106,7 @@ void VideoChannel::video_play(){
     //播放
     uint8_t *dst_data[4];
     int dst_linesize[4];
-    AVFrame *frame = 0;
+    AVFrame *frame = nullptr;
     float scaleX = (float)pContext->width / (float) winWidth;
     float scaleY = (float)pContext->height / (float) winHeight;
     float scale = fmax(scaleX, scaleY);
@@ -125,9 +122,9 @@ void VideoChannel::video_play(){
             newHeight,
             AV_PIX_FMT_RGBA,
             SWS_BILINEAR,
-            NULL,
-            NULL,
-            NULL
+            nullptr,
+            nullptr,
+            nullptr
             );
     //给显示缓存申请内存
     av_image_alloc(
@@ -140,9 +137,6 @@ void VideoChannel::video_play(){
             );
     while(isPlaying){
         int ret = frames.pop(frame);
-        if(!isPlaying){
-            break;
-        }
         if(!ret){
             continue;
         }

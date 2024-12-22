@@ -49,7 +49,7 @@ public:
 
     int deal_picture_file();
 
-    void setWinWidthAndHeight(int winWidth, int winHeight);
+    void setWinWidthAndHeight(int _winWidth, int _winHeight);
 
     int winWidth = 500;
     int winHeight = 500;

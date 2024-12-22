@@ -43,6 +43,7 @@ public class GySoPlayer implements SurfaceHolder.Callback {
 
 
     public void play(String dataSource){
+        stopNative();
         if (!TextUtils.isEmpty(dataSource)){
             prepareNative(dataSource);
         }
