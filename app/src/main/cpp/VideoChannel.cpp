@@ -70,7 +70,7 @@ void VideoChannel::stop() {
     pthread_join(pid_video_play,0);
 }
 void VideoChannel::video_decode() {
-    AVPacket *packet = 0;
+    AVPacket *packet = nullptr;
     while(isPlaying){
         /**
          * 队列控制
@@ -99,11 +99,14 @@ void VideoChannel::video_decode() {
         if(packet){
             releaseAVPacket(&packet);
         }
+//        LOGI("VideoChannel::video_decode frames.size()=%d packets.size()=%d", frames.size(), packets.size())
     }
     releaseAVPacket(&packet);
 }
+
 void VideoChannel::video_play(){
     //播放
+    int count = 0;
     uint8_t *dst_data[4];
     int dst_linesize[4];
     AVFrame *frame = nullptr;
@@ -135,12 +138,22 @@ void VideoChannel::video_play(){
             AV_PIX_FMT_RGBA,
             1
             );
+    int ret = 0;
     while(isPlaying){
-        int ret = frames.pop(frame);
+        while(frames.size()>0){
+            ret = frames.pop(frame);
+        }
         if(!ret){
             continue;
         }
-//        //yuv ->rgba
+//        LOGI("VideoChannel::video_decode render frame start count=%d", count)
+        /**
+         * 音视频同步 单位微秒us
+         */
+         if(!frame){
+             continue;
+         }
+        //yuv ->rgba
         sws_scale(
                 swsContext,
                 frame->data,
@@ -149,46 +162,9 @@ void VideoChannel::video_play(){
                 pContext->height,
                 dst_data,
                 dst_linesize
-                );
-        /**
-         * 音视频同步 单位微秒us
-         */
-         if(!frame){
-             continue;
-         }
-         //当前帧的额外延时
-        double extra_delay = frame->repeat_pict / (2*fps);
-        //根据frame得到的延时
-        double base_delay = 1.0 /fps;
-        //当前帧的实际的延时时间
-        double real_delay = base_delay + extra_delay;
-        double video_time =frame->best_effort_timestamp*av_q2d(time_base);
-        if(!audioChannel){
-            av_usleep(static_cast<unsigned int>(real_delay * 1000000));
-            //没有音频则使用视频时间回调
-            if(callbackHelper){
-                callbackHelper->onProgress(THREAD_CHILD,video_time);
-            }
-        }else{
-            double audio_time = audioChannel->audio_time;
-            double time_diff = video_time - audio_time;
-            if(time_diff>0){
-                //视频时间比音频时间大，等音频
-                if(time_diff>1){
-                    av_usleep((real_delay *2)*1000000);
-                }else{
-                    av_usleep((real_delay +time_diff)*1000000);
-                }
-            }else if(time_diff<0){
-                //视频时间比音频时间小，frames和packets中丢帧追音频
-                //在0.05的时间差内，人的肉眼几乎没有延迟感
-                if(fabs(time_diff)>=0.05){
-                    //丢掉一帧
-                    frames.sync();
-                    continue;
-                }
-            }
-        }
+        );
+         count++;
+//        LOGI("VideoChannel::video_decode render frame mid count=%d", count)
 //      //宽高数据
         renderCallback(
                 dst_data[0],
@@ -198,6 +174,7 @@ void VideoChannel::video_play(){
                 offset_width,
                 offset_height
                 );
+//        LOGI("VideoChannel::video_decode render frame end count=%d", count)
         releaseAVFrame(&frame);
     }
     releaseAVFrame(&frame);

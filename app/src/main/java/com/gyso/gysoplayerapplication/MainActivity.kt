@@ -85,17 +85,17 @@ class MainActivity : AppCompatActivity() {
         Log.i(TAG, "prepareVideo: videofile len=" + file.length())
         gySoPlayer = GySoPlayer(binding.surfaceview)
 //        gySoPlayer.play(file.absolutePath)
-        gySoPlayer.play("tcp:127.0.0.1:10002")
+        gySoPlayer.play("tcp://172.26.4.25:8997")
         handler.post{
-            Thread.sleep(5*1000)
+//            Thread.sleep(5*1000)
 //            val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final2.mp4";
 //            val file = File(filePath)
 //            Thread.sleep(1*1000)
-            gySoPlayer.play(file.absolutePath)
-            Thread.sleep(5*1000)
-            val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
-            val file = File(filePath)
-            gySoPlayer.play(file.absolutePath)
+//            gySoPlayer.play(file.absolutePath)
+//            Thread.sleep(5*1000)
+//            val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
+//            val file = File(filePath)
+//            gySoPlayer.play(file.absolutePath)
         }
     }
 }

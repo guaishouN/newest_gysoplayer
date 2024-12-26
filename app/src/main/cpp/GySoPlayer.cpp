@@ -344,6 +344,7 @@ void GySoPlayer::_start() {
         /**
          * 控制队列大小，等待队列中的数据被消费(音频视频都要等)
          */
+//        LOGI("VideoChannel::video_decode videoChannel->packets.size()=%d", videoChannel->packets.size())
         if (videoChannel && videoChannel->packets.size() > 100) {
             av_usleep(10 * 1000);
             continue;
