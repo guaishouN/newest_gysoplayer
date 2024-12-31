@@ -15,14 +15,14 @@ GySoPlayer::GySoPlayer(const char *string, CallbackHelper *callbackHelper) {
     const AVCodec *codec = nullptr;
     void *iter = nullptr;
 
-    LOGI("Supported codecs:\n")
-    while ((codec = av_codec_iterate(&iter))) {
-        LOGI("list ffmpeg codec--->%s  %d  %s   %s",
-             (av_codec_is_encoder(codec) ? "Encoder" : "Decoder"),
-             codec->id,
-             codec->name,
-             codec->long_name);
-    }
+//    LOGI("Supported codecs:\n")
+//    while ((codec = av_codec_iterate(&iter))) {
+//        LOGI("list ffmpeg codec--->%s  %d  %s   %s",
+//             (av_codec_is_encoder(codec) ? "Encoder" : "Decoder"),
+//             codec->id,
+//             codec->name,
+//             codec->long_name);
+//    }
 }
 
 
@@ -170,12 +170,16 @@ void GySoPlayer::_prepare() {
     avFormatContext = avformat_alloc_context();
 //    AVDictionary * opt = NULL;
 //    av_dict_set(&opt,"timeout","3000000",0);
-    FILE *f = fopen(videoPath, "rb");
-    if (!f) {
-        LOGE("Could not open %s\n", videoPath);
-    } else {
-        LOGE("sucesssfully open %s\n", videoPath);
+    const char *fileExtension = strrchr(videoPath, '.');
+    if (fileExtension && (strcasecmp(fileExtension, ".mp4") == 0)){
+        FILE *f = fopen(videoPath, "rb");
+        if (!f) {
+            LOGE("Could not open %s\n", videoPath);
+        } else {
+            LOGE("sucesssfully open %s\n", videoPath);
+        }
     }
+
     int ret = avformat_open_input(&avFormatContext, videoPath, nullptr, nullptr);
 
     if (ret < 0) {
@@ -185,8 +189,6 @@ void GySoPlayer::_prepare() {
         }
         return;
     }
-
-    const char *fileExtension = strrchr(videoPath, '.');
     // 判断是否为图片格式
     if (fileExtension && (strcasecmp(fileExtension, ".png") == 0
                           || strcasecmp(fileExtension, ".jpg") == 0
