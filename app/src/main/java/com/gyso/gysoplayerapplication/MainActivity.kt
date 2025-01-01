@@ -87,12 +87,12 @@ class MainActivity : AppCompatActivity() {
         Log.i(TAG, "prepareVideo: videofile len=" + file.length())
         gySoPlayer = GySoPlayer(binding.surfaceview)
         gySoPlayer.addCameraControl(lifecycleOwner = this)
-        gySoPlayer.play(file.absolutePath)
+        gySoPlayer.play("tcp://127.0.0.1:10002")
 //        gySoPlayer.play("tcp://172.26.4.25:8997")
 //        gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
         handler.post{
-            Thread.sleep(5*1000)
-            gySoPlayer.play("tcp://127.0.0.1:10002")
+//            Thread.sleep(5*1000)
+//            gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
             Thread.sleep(5*1000)
 //            gySoPlayer.play(file.absolutePath)
 //            Thread.sleep(5*1000)
@@ -113,7 +113,7 @@ class MainActivity : AppCompatActivity() {
             file = File(filePath)
             gySoPlayer.play(file.absolutePath)
             Thread.sleep(5*1000)
-            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
+            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "output.mp4";
             file = File(filePath)
             gySoPlayer.play(file.absolutePath)
         }
