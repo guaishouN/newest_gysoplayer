@@ -141,6 +141,9 @@ void VideoChannel::video_play(){
     int ret = 0;
     while(isPlaying){
         while(frames.size()>0){
+            if(!frame){
+                releaseAVFrame(&frame);
+            }
             ret = frames.pop(frame);
         }
         if(!ret){

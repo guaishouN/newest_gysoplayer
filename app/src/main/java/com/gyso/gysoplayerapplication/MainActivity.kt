@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity() {
      * 准备video
      */
     private fun prepareVideo() {
-        val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
+        val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final2.mp4";
         Log.i(TAG, "prepareVideo: videofile filePath=" + filePath)
         val file = File(filePath)
         if (!file.exists()) {
@@ -92,14 +92,28 @@ class MainActivity : AppCompatActivity() {
 //        gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
         handler.post{
             Thread.sleep(5*1000)
-            var filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final2.mp4";
-            var file = File(filePath)
-            gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
+            gySoPlayer.play("tcp://127.0.0.1:10002")
             Thread.sleep(5*1000)
 //            gySoPlayer.play(file.absolutePath)
 //            Thread.sleep(5*1000)
             Log.i(TAG, "prepareVideo: ----------------last")
-            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "output.mp4";
+            var filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
+            var file = File(filePath)
+            gySoPlayer.play(file.absolutePath)
+            Thread.sleep(5*1000)
+            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "/jpgfiles/output_020.jpg";
+            file = File(filePath)
+            gySoPlayer.play(file.absolutePath)
+            Thread.sleep(5*1000)
+            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final2.mp4";
+            file = File(filePath)
+            gySoPlayer.play(file.absolutePath)
+            Thread.sleep(5*1000)
+            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "demo.mp4";
+            file = File(filePath)
+            gySoPlayer.play(file.absolutePath)
+            Thread.sleep(5*1000)
+            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
             file = File(filePath)
             gySoPlayer.play(file.absolutePath)
         }

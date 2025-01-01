@@ -35,8 +35,8 @@ jint JNI_OnLoad(JavaVM *vm, void *unused) {
  * @param src_lineSize
  */
 void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize, int offset_width, int offset_height){
-    LOGI("renderFrame width=%d, height=%d src_lineSize=%d, offset_width=%d, offset_height=%d",
-         width, height, src_lineSize, offset_width, offset_height)
+//    LOGI("renderFrame width=%d, height=%d src_lineSize=%d, offset_width=%d, offset_height=%d",
+//         width, height, src_lineSize, offset_width, offset_height)
     pthread_mutex_lock(&mutex);
     if(!window){
         pthread_mutex_unlock(&mutex);

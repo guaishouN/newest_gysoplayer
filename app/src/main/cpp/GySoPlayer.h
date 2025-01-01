@@ -54,6 +54,9 @@ public:
     int winWidth = 500;
     int winHeight = 500;
 
+    int playCameraFrame(uint8_t *data, size_t data_size);
+
+    int prepareForCamera();
 private:
     char * videoPath = nullptr;
     bool isPlaying;

@@ -40,17 +40,13 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
     }
 
     fun play(dataSource: String?): GySoPlayer {
-        streamManager?.stop()
-        if (lastDataSource != CAMERA_BACK && lastDataSource != CAMERA_FRONT){
-            stopNative()
-        }
+        stop()
         if (!TextUtils.isEmpty(dataSource)) {
             if (dataSource == CAMERA_BACK || dataSource == CAMERA_FRONT){
                 streamManager?.start()
-            }else{
-                surfaceView?.let {
-                    prepareNative(dataSource)
-                }
+            }
+            surfaceView?.let {
+                prepareNative(dataSource)
             }
         }
         lastDataSource = dataSource
@@ -62,8 +58,8 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
     }
 
     fun stop() {
+        streamManager?.stop()
         stopNative()
-        releaseNative()
     }
 
     private fun setSurfaceView(surfaceView: SurfaceView) {

@@ -161,13 +161,104 @@ int GySoPlayer::deal_picture_file() {
     return ret;
 }
 
+int GySoPlayer::playCameraFrame(uint8_t *data, size_t data_size) {
+    LOGI("playCameraFrame data %d", (int) data_size);
+    if (!data || data_size == 0) {
+        LOGE("Invalid input parameters");
+        return -1;
+    }
+
+    AVPacket *pPacket = av_packet_alloc();
+    if (!pPacket) {
+        LOGE("Failed to allocate AVPacket");
+        av_packet_free(&pPacket);
+        return -1;
+    }
+    pPacket->data = data;
+    pPacket->size = data_size; // 使用正确的 data_size
+
+    if (videoChannel && isPlaying) {
+        videoChannel->packets.push(pPacket);
+    } else{
+        av_packet_free(&pPacket);
+    }
+    return 0;
+}
+
+int GySoPlayer::prepareForCamera() {
+    LOGI("prepareForCamera");
+    const AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+    if (!codec) {
+        LOGE("Failed to find H.264 decoder");
+        return -1;
+    }
+    AVCodecContext *ctx = avcodec_alloc_context3(codec);
+    if (!ctx) {
+        LOGE("Failed to allocate codec context");
+        return -1;
+    }
+
+    // 打开解码器
+    if (avcodec_open2(ctx, codec, NULL) < 0) {
+        LOGE("Failed to open codec");
+        avcodec_free_context(&ctx);
+        return -1;
+    }
+    AVRational time_base = {1, 1000};
+    AVRational frame_rate = {30, 1};
+    int fps = static_cast<int>(av_q2d(frame_rate));
+    videoChannel = new VideoChannel(0, ctx, time_base, fps);
+    videoChannel->setRenderCallback(renderCallback);
+    return 0;
+}
+
+int isCameraSource(char *videoPath){
+    if (videoPath) {
+        if (strcasecmp(videoPath, "CAMERA_FRONT") == 0) {
+            LOGI("videoPath is CAMERA_FRONT (case insensitive)");
+            return 1;
+        } else if (strcasecmp(videoPath, "CAMERA_BACK") == 0) {
+            LOGI("videoPath is CAMERA_BACK (case insensitive)");
+            return 1;
+        } else {
+            LOGI("videoPath is not a camera identifier (case insensitive)");
+        }
+    } else {
+        LOGE("videoPath is null");
+    }
+    return 0;
+}
+
+int isPictureSource(char *videoPath){
+    const char *fileExtension = strrchr(videoPath, '.');
+    // 如果为显示图片，则显示后就返回
+    if (fileExtension && (strcasecmp(fileExtension, ".png") == 0
+                          || strcasecmp(fileExtension, ".jpg") == 0
+                          || strcasecmp(fileExtension, ".jpeg") == 0
+                          || strcasecmp(fileExtension, ".webp") == 0
+    )) {
+        LOGI("isPictureSource: %s", videoPath);
+        return 1;
+    }
+    return 0;
+}
 
 void GySoPlayer::_prepare() {
     LOGI("prepare %s", videoPath);
+    //延时1s, 避免stop流程还没走完
+//    av_usleep(200*1000);
     avformat_network_init();
     //文件上下文，打开文件
     av_log_set_level(AV_LOG_DEBUG);
     avFormatContext = avformat_alloc_context();
+    //如果播放的是摄像头数据
+    if(isCameraSource(videoPath)){
+        prepareForCamera();
+        if (callbackHelper) {
+            callbackHelper->onPrepared(THREAD_CHILD);
+        }
+        return;
+    }
 //    AVDictionary * opt = NULL;
 //    av_dict_set(&opt,"timeout","3000000",0);
     const char *fileExtension = strrchr(videoPath, '.');
@@ -190,11 +281,7 @@ void GySoPlayer::_prepare() {
         return;
     }
     // 判断是否为图片格式
-    if (fileExtension && (strcasecmp(fileExtension, ".png") == 0
-                          || strcasecmp(fileExtension, ".jpg") == 0
-                          || strcasecmp(fileExtension, ".jpeg") == 0
-                          || strcasecmp(fileExtension, ".webp") == 0
-    )) {
+    if (isPictureSource(videoPath)) {
         LOGI("Detected image file: %s", videoPath);
         //start后直接显示
         if (callbackHelper) {
@@ -307,6 +394,12 @@ void *startInChildThread(void *args) {
  */
 void GySoPlayer::start() {
     isPlaying = 1;
+    // 如果为显示图片，则显示后就返回
+    if (isPictureSource(videoPath)){
+        LOGI("start show  image file: %s", videoPath);
+        deal_picture_file();
+        return;
+    }
     if (videoChannel) {
         videoChannel->setAudioChannel(audioChannel);
         videoChannel->setWinWidthAndHeight(this->winWidth, this->winHeight);
@@ -315,6 +408,10 @@ void GySoPlayer::start() {
     if (audioChannel) {
         LOGI("audioChannel->start() audioChannel=%d")
         audioChannel->start();
+    }
+    if(isCameraSource(videoPath)){
+        LOGI("start show camera data: %s", videoPath);
+        return;
     }
     pthread_create(&pThread_start, 0, startInChildThread, this);
 }
@@ -331,17 +428,6 @@ void GySoPlayer::setWinWidthAndHeight(int _winWidth, int _winHeight) {
  */
 void GySoPlayer::_start() {
     LOGI("_start");
-    const char *fileExtension = strrchr(videoPath, '.');
-    // 如果为显示图片，则显示后就返回
-    if (fileExtension && (strcasecmp(fileExtension, ".png") == 0
-                          || strcasecmp(fileExtension, ".jpg") == 0
-                          || strcasecmp(fileExtension, ".jpeg") == 0
-                          || strcasecmp(fileExtension, ".webp") == 0
-    )) {
-        LOGI("start show  image file: %s", videoPath);
-        deal_picture_file();
-        return;
-    }
     while (isPlaying) {
         /**
          * 控制队列大小，等待队列中的数据被消费(音频视频都要等)
@@ -440,31 +526,6 @@ int GySoPlayer::getDuration() {
     return duration;
 }
 
-/**
- * 设置为友元函数
- * @param args
- * @return
- */
-void *task_stop(void *args) {
-    GySoPlayer *gySoPlayer = static_cast<GySoPlayer *>(args);
-    gySoPlayer->isPlaying = 0;
-    pthread_join(gySoPlayer->pThread_prepare, nullptr);
-    pthread_join(gySoPlayer->pThread_start, nullptr);
-    if (gySoPlayer->avFormatContext) {
-        avformat_close_input(&gySoPlayer->avFormatContext);
-        avformat_free_context(gySoPlayer->avFormatContext);
-        gySoPlayer->avFormatContext = nullptr;
-    }
-    if(gySoPlayer->audioChannel){
-        DELETE(gySoPlayer->audioChannel);
-    }
-    if(gySoPlayer->videoChannel){
-        DELETE(gySoPlayer->videoChannel);
-    }
-    DELETE(gySoPlayer);
-    return nullptr;
-}
-
 void GySoPlayer::stop() {
     callbackHelper = 0;
     if (audioChannel) {
@@ -473,5 +534,34 @@ void GySoPlayer::stop() {
     if (videoChannel) {
         videoChannel->callbackHelper = 0;
     }
-    pthread_create(&pid_stop, 0, task_stop, this);
+    //图片没有打开
+    if (isPictureSource(videoPath)){
+        return;
+    }
+//    pthread_create(&pid_stop, 0, task_stop, this);
+    auto *gySoPlayer = static_cast<GySoPlayer *>(this);
+    gySoPlayer->isPlaying = 0;
+    LOGI("task_stop2")
+    pthread_join(gySoPlayer->pThread_prepare, nullptr);
+    LOGI("task_stop2++")
+    // 如果是本地摄像头或者图片，并没有开启这个线程
+    if (!isCameraSource(videoPath) && !isPictureSource(videoPath)){
+        pthread_join(gySoPlayer->pThread_start, nullptr);
+    }
+    LOGI("task_stop3")
+    if (gySoPlayer->avFormatContext) {
+        avformat_close_input(&gySoPlayer->avFormatContext);
+        avformat_free_context(gySoPlayer->avFormatContext);
+        gySoPlayer->avFormatContext = nullptr;
+    }
+    LOGI("task_stop4")
+    if(gySoPlayer->audioChannel){
+        DELETE(gySoPlayer->audioChannel);
+    }
+    LOGI("task_stop5")
+    if(gySoPlayer->videoChannel){
+        DELETE(gySoPlayer->videoChannel);
+    }
+    LOGI("task_stop6")
+    DELETE(gySoPlayer);
 }
