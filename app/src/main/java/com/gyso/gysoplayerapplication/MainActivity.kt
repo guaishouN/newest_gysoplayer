@@ -93,9 +93,12 @@ class MainActivity : AppCompatActivity() {
         handler.post{
 //            Thread.sleep(5*1000)
 //            gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
-            Thread.sleep(5*1000)
-//            gySoPlayer.play(file.absolutePath)
 //            Thread.sleep(5*1000)
+//            gySoPlayer.play(file.absolutePath)
+            Thread.sleep(5*1000)
+//            gySoPlayer.stop()
+//            gySoPlayer = GySoPlayer(binding.surfaceview)
+//            gySoPlayer.addCameraControl(lifecycleOwner = this)
             Log.i(TAG, "prepareVideo: ----------------last")
             var filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
             var file = File(filePath)

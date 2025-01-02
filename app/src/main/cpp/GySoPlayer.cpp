@@ -213,19 +213,11 @@ int GySoPlayer::prepareForCamera() {
 }
 
 int isCameraSource(char *videoPath){
-    if (videoPath) {
-        if (strcasecmp(videoPath, "CAMERA_FRONT") == 0) {
-            LOGI("videoPath is CAMERA_FRONT (case insensitive)");
-            return 1;
-        } else if (strcasecmp(videoPath, "CAMERA_BACK") == 0) {
-            LOGI("videoPath is CAMERA_BACK (case insensitive)");
-            return 1;
-        } else {
-            LOGI("videoPath is not a camera identifier (case insensitive)");
-        }
-    } else {
-        LOGE("videoPath is null");
+    if (videoPath && (strcasecmp(videoPath, "CAMERA_FRONT") == 0 || strcasecmp(videoPath, "CAMERA_BACK") == 0)) {
+        LOGI("isCameraSource: %s", videoPath);
+        return 1;
     }
+    LOGI("not isCameraSource: %s", videoPath);
     return 0;
 }
 
@@ -240,6 +232,29 @@ int isPictureSource(char *videoPath){
         LOGI("isPictureSource: %s", videoPath);
         return 1;
     }
+    LOGI("not isPictureSource: %s", videoPath);
+    return 0;
+}
+
+int isMp4LocalSource(char *videoPath){
+    const char *fileExtension = strrchr(videoPath, '.');
+    // 如果为显示图片，则显示后就返回
+    if (fileExtension && (strcasecmp(fileExtension, ".mp4") == 0
+    || strcasecmp(fileExtension, ".avi") == 0
+    || strcasecmp(fileExtension, ".mkv") == 0
+    || strcasecmp(fileExtension, ".mov") == 0
+    || strcasecmp(fileExtension, ".webm") == 0
+    || strcasecmp(fileExtension, ".flv") == 0
+    || strcasecmp(fileExtension, ".ts") == 0
+    || strcasecmp(fileExtension, ".rmvb") == 0
+    || strcasecmp(fileExtension, ".rm") == 0
+    || strcasecmp(fileExtension, ".3gp") == 0
+    || strcasecmp(fileExtension, ".iso") == 0
+    )) {
+        LOGI("isMp4LocalSource: %s", videoPath);
+        return 1;
+    }
+    LOGI("not isMp4LocalSource: %s", videoPath);
     return 0;
 }
 
@@ -351,6 +366,7 @@ void GySoPlayer::_prepare() {
             int fps = static_cast<int>(av_q2d(frame_rate));
             videoChannel = new VideoChannel(i, avCodecContext, time_base, fps);
             videoChannel->setRenderCallback(renderCallback);
+            videoChannel->isMp4LocalSource=isMp4LocalSource(videoPath);
             //如果没有音频就在视频中回调进度给UI
             if (!duration) {
                 //直播 不需要回调进度给Java

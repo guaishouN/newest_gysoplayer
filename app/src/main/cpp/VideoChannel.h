@@ -27,6 +27,7 @@ class VideoChannel : public BaseChannel{
         int winHeight = 500;
         void setAudioChannel(AudioChannel *pChannel);
         void setWinWidthAndHeight(int winWidth, int winHeight);
+        int isMp4LocalSource = 0;
 
 private:
     pthread_t pid_video_decode;

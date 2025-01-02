@@ -140,10 +140,15 @@ void VideoChannel::video_play(){
             );
     int ret = 0;
     while(isPlaying){
-        while(frames.size()>0){
-            if(!frame){
-                releaseAVFrame(&frame);
+        //如果不是本地视频文件则最低延时播放，完全没缓存
+        if(!isMp4LocalSource){
+            while(frames.size()>0){
+                if(frame){
+                    releaseAVFrame(&frame);
+                }
+                ret = frames.pop(frame);
             }
+        }else{
             ret = frames.pop(frame);
         }
         if(!ret){
@@ -166,6 +171,41 @@ void VideoChannel::video_play(){
                 dst_data,
                 dst_linesize
         );
+        //播放本地文件要控制延时
+        if(isMp4LocalSource){
+            double extra_delay = frame->repeat_pict / (2*fps);
+            //根据frame得到的延时
+            double base_delay = 1.0 /fps;
+            //当前帧的实际的延时时间
+            double real_delay = base_delay + extra_delay;
+            double video_time =frame->best_effort_timestamp*av_q2d(time_base);
+            if(!audioChannel){
+                av_usleep(static_cast<unsigned int>(real_delay * 1000000));
+                //没有音频则使用视频时间回调
+                if(callbackHelper){
+                    callbackHelper->onProgress(THREAD_CHILD,video_time);
+                }
+            }else{
+                double audio_time = audioChannel->audio_time;
+                double time_diff = video_time - audio_time;
+                if(time_diff>0){
+                    //视频时间比音频时间大，等音频
+                    if(time_diff>1){
+                        av_usleep((real_delay *2)*1000000);
+                    }else{
+                        av_usleep((real_delay +time_diff)*1000000);
+                    }
+                }else if(time_diff<0){
+                    //视频时间比音频时间小，frames和packets中丢帧追音频
+                    //在0.05的时间差内，人的肉眼几乎没有延迟感
+                    if(fabs(time_diff)>=0.05){
+                        //丢掉一帧
+                        frames.sync();
+                        continue;
+                    }
+                }
+        }}
+
          count++;
 //        LOGI("VideoChannel::video_decode render frame mid count=%d", count)
 //      //宽高数据
