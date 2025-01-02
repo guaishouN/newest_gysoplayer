@@ -33,7 +33,7 @@ public:
     void prepare();
 
     void _prepare();
-    void show_img(AVCodecContext *pContext, AVFrame *frame);
+    void show_frame(AVCodecContext *pContext, AVFrame *frame);
 
     void start();
 

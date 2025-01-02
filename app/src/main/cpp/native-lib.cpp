@@ -84,6 +84,20 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize, int
     pthread_mutex_unlock(&mutex);
 }
 
+extern "C"
+JNIEXPORT void
+JNICALL
+Java_com_gyso_gysoplayerapplication_GySoPlayer_playCameraFrame(JNIEnv *env, jobject thiz,
+                                                       jbyteArray data) {
+//    LOGI("Java_com_gyso_gysoplayerapplication_GySoPlayer_playCameraFrame");
+    jsize sps_size = env->GetArrayLength(data);
+    jbyte *sps_data_ptr = env->GetByteArrayElements(data, nullptr);
+    if(gysoplayer){
+        gysoplayer->playCameraFrame(reinterpret_cast<uint8_t *>(sps_data_ptr), sps_size);
+    }
+    env->ReleaseByteArrayElements(data, sps_data_ptr, 0);
+}
+
 
 extern "C"
 JNIEXPORT void JNICALL

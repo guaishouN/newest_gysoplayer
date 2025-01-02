@@ -43,7 +43,7 @@ void GySoPlayer::prepare() {
     pthread_create(&pThread_prepare, 0, prepareInChildThread, this);
 }
 
-void GySoPlayer::show_img(AVCodecContext *pContext, AVFrame *frame) {
+void GySoPlayer::show_frame(AVCodecContext *pContext, AVFrame *frame) {
     //播放
     uint8_t *dst_data[4];
     int dst_linesize[4];
@@ -93,8 +93,8 @@ void GySoPlayer::show_img(AVCodecContext *pContext, AVFrame *frame) {
             offset_width,
             offset_height
     );
-    LOGI("winWidth=%d winHeight=%d  newWidth=%d newHeight=%d frame->linesize=%d offset_widht=%d offset_height=%d",
-         winWidth, winHeight, newWidth, newHeight, frame->linesize, offset_width, offset_height)
+//    LOGI("winWidth=%d winHeight=%d  newWidth=%d newHeight=%d frame->linesize=%d offset_widht=%d offset_height=%d",
+//         winWidth, winHeight, newWidth, newHeight, frame->linesize, offset_width, offset_height)
     av_freep(&dst_data[0]);
     sws_freeContext(swsContext);
 }
@@ -148,7 +148,7 @@ int GySoPlayer::deal_picture_file() {
 
             LOGI("Decoded image frame: width=%d, height=%d", frame->width, frame->height);
             // 将解码的图像帧传递给渲染模块
-            show_img(codecCtx,frame);
+            show_frame(codecCtx, frame);
             break;
         }
         av_packet_unref(packet);
@@ -162,7 +162,7 @@ int GySoPlayer::deal_picture_file() {
 }
 
 int GySoPlayer::playCameraFrame(uint8_t *data, size_t data_size) {
-    LOGI("playCameraFrame data %d", (int) data_size);
+//    LOGI("playCameraFrame data %d", (int) data_size);
     if (!data || data_size == 0) {
         LOGE("Invalid input parameters");
         return -1;
@@ -174,14 +174,43 @@ int GySoPlayer::playCameraFrame(uint8_t *data, size_t data_size) {
         av_packet_free(&pPacket);
         return -1;
     }
-    pPacket->data = data;
-    pPacket->size = data_size; // 使用正确的 data_size
-
-    if (videoChannel && isPlaying) {
-        videoChannel->packets.push(pPacket);
-    } else{
+    // 分配 AVFrame 以接收解码后的帧
+    AVFrame *frame = av_frame_alloc();
+    if (!frame) {
+        LOGE("Failed to allocate AVFrame");
         av_packet_free(&pPacket);
+        avcodec_free_context(&videoChannel->pContext);
+        return -1;
     }
+    int ret = 0;
+    pPacket->data = data;
+    pPacket->size = (int) data_size;
+    ret = avcodec_send_packet(videoChannel->pContext, pPacket);
+    if (ret < 0) {
+        LOGE("Error sending packet to decoder");
+    } else{
+//        LOGE("Waiting for decoded frames...");
+        ret = avcodec_receive_frame(videoChannel->pContext, frame);
+        if (ret < 0) {
+            LOGE("Error receiving frame from decoder");
+        }else{
+//            LOGE("Decoded frame with width: %d, height: %d", frame->width, frame->height);
+//            LOGI(
+//                    "Frame %c (%d) pts %d dts %d",
+//                    av_get_picture_type_char(frame->pict_type),
+//                    (int) (videoChannel->pContext->frame_num),
+//                    (int) (frame->pts),
+//                    (int) (frame->pkt_dts)
+//            );
+//            LOGE("successfully get info videoChannel->pContext with width: %d, height: %d", videoChannel->pContext->width, videoChannel->pContext->height);
+            if(videoChannel && videoChannel->pContext->width>0){
+                show_frame(videoChannel->pContext, frame);
+            }
+        }
+    }
+    av_frame_free(&frame);
+    av_packet_free(&pPacket);
+//    avcodec_free_context(&videoChannel->pContext);
     return 0;
 }
 
@@ -197,6 +226,8 @@ int GySoPlayer::prepareForCamera() {
         LOGE("Failed to allocate codec context");
         return -1;
     }
+    AVCodecParserContext *parser;
+    parser = av_parser_init(codec->id);
 
     // 打开解码器
     if (avcodec_open2(ctx, codec, NULL) < 0) {
@@ -204,11 +235,13 @@ int GySoPlayer::prepareForCamera() {
         avcodec_free_context(&ctx);
         return -1;
     }
+
     AVRational time_base = {1, 1000};
     AVRational frame_rate = {30, 1};
     int fps = static_cast<int>(av_q2d(frame_rate));
     videoChannel = new VideoChannel(0, ctx, time_base, fps);
     videoChannel->setRenderCallback(renderCallback);
+    videoChannel->parser = parser;
     return 0;
 }
 
@@ -260,20 +293,18 @@ int isMp4LocalSource(char *videoPath){
 
 void GySoPlayer::_prepare() {
     LOGI("prepare %s", videoPath);
+    //如果播放的是摄像头数据
+    if(isCameraSource(videoPath)){
+        prepareForCamera();
+        return;
+    }
     //延时1s, 避免stop流程还没走完
 //    av_usleep(200*1000);
     avformat_network_init();
     //文件上下文，打开文件
     av_log_set_level(AV_LOG_DEBUG);
     avFormatContext = avformat_alloc_context();
-    //如果播放的是摄像头数据
-    if(isCameraSource(videoPath)){
-        prepareForCamera();
-        if (callbackHelper) {
-            callbackHelper->onPrepared(THREAD_CHILD);
-        }
-        return;
-    }
+
 //    AVDictionary * opt = NULL;
 //    av_dict_set(&opt,"timeout","3000000",0);
     const char *fileExtension = strrchr(videoPath, '.');
@@ -551,33 +582,26 @@ void GySoPlayer::stop() {
         videoChannel->callbackHelper = 0;
     }
     //图片没有打开
-    if (isPictureSource(videoPath)){
-        return;
-    }
-//    pthread_create(&pid_stop, 0, task_stop, this);
     auto *gySoPlayer = static_cast<GySoPlayer *>(this);
     gySoPlayer->isPlaying = 0;
-    LOGI("task_stop2")
     pthread_join(gySoPlayer->pThread_prepare, nullptr);
-    LOGI("task_stop2++")
-    // 如果是本地摄像头或者图片，并没有开启这个线程
-    if (!isCameraSource(videoPath) && !isPictureSource(videoPath)){
+    if (isPictureSource(videoPath) || isCameraSource(videoPath)){
+        if(isCameraSource(videoPath) && videoChannel){
+            avcodec_free_context(&videoChannel->pContext);
+        }
+    }else{
         pthread_join(gySoPlayer->pThread_start, nullptr);
     }
-    LOGI("task_stop3")
     if (gySoPlayer->avFormatContext) {
         avformat_close_input(&gySoPlayer->avFormatContext);
         avformat_free_context(gySoPlayer->avFormatContext);
         gySoPlayer->avFormatContext = nullptr;
     }
-    LOGI("task_stop4")
     if(gySoPlayer->audioChannel){
         DELETE(gySoPlayer->audioChannel);
     }
-    LOGI("task_stop5")
     if(gySoPlayer->videoChannel){
         DELETE(gySoPlayer->videoChannel);
     }
-    LOGI("task_stop6")
     DELETE(gySoPlayer);
 }

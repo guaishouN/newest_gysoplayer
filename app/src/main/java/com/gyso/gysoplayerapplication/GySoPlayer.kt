@@ -27,7 +27,7 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
 
     fun addCameraControl(lifecycleOwner: LifecycleOwner){
         surfaceView?.let {
-            val cameraPreviewInterface = createCameraPreviewInterface(it, onBitmapReady = { _ -> {}})
+            val cameraPreviewInterface = createCameraPreviewInterface(this@GySoPlayer, it, onBitmapReady = { _ -> {}})
             val context = it.context
             streamManager = context?.let { it1 ->
                 StreamManager(
@@ -167,6 +167,7 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
     private external fun releaseNative()
     private external fun setSurfaceNative(surface: Surface)
     private external fun seekNative(playProgress: Int)
+    external fun playCameraFrame(data:ByteArray)
     external fun yuvToNV21(width: Int, height: Int, byteBufferY: ByteBuffer,byteBufferYLength: Int,
         byteBufferU: ByteBuffer,byteBufferULength: Int,byteBufferV: ByteBuffer,byteBufferVLength: Int,): ByteArray
 
@@ -214,7 +215,7 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
     }
 }
 
-private fun createCameraPreviewInterface(sreviewView: SurfaceView, onBitmapReady: (Bitmap) -> Unit): CameraPreviewInterface {
+private fun createCameraPreviewInterface(player:GySoPlayer, sreviewView: SurfaceView, onBitmapReady: (Bitmap) -> Unit): CameraPreviewInterface {
     return object : CameraPreviewInterface {
         val needSaveH264ToLocal = true // 是否保存h264到本地
         var width:Int = 0
@@ -259,7 +260,8 @@ private fun createCameraPreviewInterface(sreviewView: SurfaceView, onBitmapReady
             "CameraPreviewScreen".logByteBufferContent("PPS", pps)
             "CameraPreviewScreen".logByteBufferContent("VPS", vps)//only for H265
             if (pps?.array() != null && vps?.array() != null) {
-//                VideoStreamServer.sendSpsPps(sps.array(), pps.array())
+                player.playCameraFrame(pps.array())
+                player.playCameraFrame(vps.array())
             }
         }
 
@@ -274,7 +276,7 @@ private fun createCameraPreviewInterface(sreviewView: SurfaceView, onBitmapReady
                 h264Buffer.get(data)
             }
             //需要注意这里是不是阻塞的
-//            VideoStreamServer.sendByteArray(data)
+            player.playCameraFrame(data)
             Log.i("ddd", "onVideoBuffer: len"+data.size)
 //            h264Buffer.rewind()
 //            "onVideoBuffer".logByteBufferContent("NAL", h264Buffer)

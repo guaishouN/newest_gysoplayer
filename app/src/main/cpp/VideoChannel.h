@@ -28,6 +28,7 @@ class VideoChannel : public BaseChannel{
         void setAudioChannel(AudioChannel *pChannel);
         void setWinWidthAndHeight(int winWidth, int winHeight);
         int isMp4LocalSource = 0;
+        AVCodecParserContext *parser = nullptr;
 
 private:
     pthread_t pid_video_decode;

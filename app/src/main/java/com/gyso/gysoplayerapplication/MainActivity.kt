@@ -91,8 +91,8 @@ class MainActivity : AppCompatActivity() {
 //        gySoPlayer.play("tcp://172.26.4.25:8997")
 //        gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
         handler.post{
-//            Thread.sleep(5*1000)
-//            gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
+            Thread.sleep(5*1000)
+            gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
 //            Thread.sleep(5*1000)
 //            gySoPlayer.play(file.absolutePath)
             Thread.sleep(5*1000)
