@@ -102,7 +102,11 @@ class VideoEncoder(private val cameraPreviewInterface: CameraPreviewInterface) {
                         cameraPreviewInterface.onVideoBuffer(outputBuffer, info)
 //                        Log.d("CameraXPreviewFragment", "onVideoBuffer: ${info.getFormattedPresentationTime()}")
                     }
-                    codec.releaseOutputBuffer(index, false)
+                    try {
+                        codec.releaseOutputBuffer(index, false)
+                    } catch (e: IllegalStateException) {
+                        Log.e("VideoEncoder", "Error releasing output buffer: " + e.message)
+                    }
                 }
             }
 
@@ -121,7 +125,7 @@ class VideoEncoder(private val cameraPreviewInterface: CameraPreviewInterface) {
 
     // 开始编码
     fun start() {
-        Log.i(TAG, "start: ")
+//        Log.i(TAG, "start: ")
         startTime = System.currentTimeMillis()
         codec.start()
         isStarted = true
@@ -133,7 +137,7 @@ class VideoEncoder(private val cameraPreviewInterface: CameraPreviewInterface) {
     fun encode(yuvBytes: ByteArray) {
         if (!isStarted) return
         val index = mIndexQueue.poll() ?: return
-        Log.i(TAG, "encode: ${yuvBytes.size}")
+//        Log.i(TAG, "encode: ${yuvBytes.size}")
         val inputBuffer: ByteBuffer? = codec.getInputBuffer(index)
         inputBuffer?.clear()
         inputBuffer?.put(yuvBytes)

@@ -133,7 +133,7 @@ public class AssetsVideoStreamPusher {
             byte[] h264Frame = new byte[sampleSize];
             inputBuffer.get(h264Frame);
             inputBuffer.clear();
-            Log.i(TAG, "send count={"+count+"} nal len["+h264Frame.length +"]"+ Arrays.toString(h264Frame));
+//            Log.i(TAG, "send count={"+count+"} nal len["+h264Frame.length +"]"+ Arrays.toString(h264Frame));
             // 发送 H.264 帧到服务器
             outputStream.write(h264Frame);
             outputStream.flush();

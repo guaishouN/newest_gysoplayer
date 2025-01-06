@@ -47,6 +47,8 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
             }
             surfaceView?.let {
                 prepareNative(dataSource)
+                setViewport(it.width, it.height)
+                Log.i(TAG, "play---------------: ${it.width} ${it.height}")
             }
         }
         lastDataSource = dataSource
@@ -168,6 +170,7 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
     private external fun setSurfaceNative(surface: Surface)
     private external fun seekNative(playProgress: Int)
     external fun playCameraFrame(data:ByteArray)
+    private external fun setViewport(vpWidth:Int, vpHeight:Int)
     external fun yuvToNV21(width: Int, height: Int, byteBufferY: ByteBuffer,byteBufferYLength: Int,
         byteBufferU: ByteBuffer,byteBufferULength: Int,byteBufferV: ByteBuffer,byteBufferVLength: Int,): ByteArray
 
@@ -277,7 +280,7 @@ private fun createCameraPreviewInterface(player:GySoPlayer, sreviewView: Surface
             }
             //需要注意这里是不是阻塞的
             player.playCameraFrame(data)
-            Log.i("ddd", "onVideoBuffer: len"+data.size)
+//            Log.i("ddd", "onVideoBuffer: len"+data.size)
 //            h264Buffer.rewind()
 //            "onVideoBuffer".logByteBufferContent("NAL", h264Buffer)
             if (needSaveH264ToLocal) {

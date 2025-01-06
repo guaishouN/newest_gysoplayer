@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "GysoPlayerApplication"
 include(":app")
- 
+include(":gysoplayer")

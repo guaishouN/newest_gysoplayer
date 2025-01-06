@@ -172,10 +172,23 @@ Java_com_gyso_gysoplayerapplication_GySoPlayer_setSurfaceNative(JNIEnv *env, job
 
 extern "C"
 JNIEXPORT void JNICALL
+Java_com_gyso_gysoplayerapplication_GySoPlayer_setViewport(JNIEnv *env, jobject thiz,
+                                                                jint vpWidht, jint vpHeight) {
+
+    pthread_mutex_lock(&mutex);
+    if(gysoplayer && window){
+        int windowWidth = ANativeWindow_getWidth(window);
+        int windowHeight = ANativeWindow_getHeight(window);
+        gysoplayer->setWinWidthAndHeight(windowWidth, windowHeight);
+    }
+    pthread_mutex_unlock(&mutex);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
 Java_com_gyso_gysoplayerapplication_GySoPlayer_seekNative(JNIEnv *env,
         jobject thiz,
         jint play_progress) {
-
     if(gysoplayer){
         gysoplayer->seek(play_progress);
     }
