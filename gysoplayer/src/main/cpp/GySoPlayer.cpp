@@ -99,12 +99,198 @@ void GySoPlayer::show_frame(AVCodecContext *pContext, AVFrame *frame) {
     sws_freeContext(swsContext);
 }
 
+void logData(uint8_t *data, int data_size) {
+
+    char buffer[1024] = {0}; // 用于存储格式化的十六进制字符串
+    int maxPrintSize = data_size > 512 ? 512 : data_size; // 限制打印数据长度
+
+    // 将 packet->data 转换为十六进制字符串
+    for (int i = 0; i < maxPrintSize; i++) {
+        snprintf(buffer + i * 2, sizeof(buffer) - i * 2, "%02X", data[i]);
+    }
+
+    // 打印数据
+    LOGI("logData size: %d, data (hex): %s", data_size, buffer);
+}
+
+
+void encodeVideo(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
+                 FILE *outfile) {
+    int ret;
+
+    /* send the frame to the encoder */
+    if (frame)
+        LOGI("Send frame %3" PRId64"\n", frame->pts);
+
+    ret = avcodec_send_frame(enc_ctx, frame);
+    if (ret < 0) {
+        LOGE( "Error sending a frame for encoding\n");
+        return;
+    }
+
+    while (ret >= 0) {
+        ret = avcodec_receive_packet(enc_ctx, pkt);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            return;
+        else if (ret < 0) {
+            LOGE("Error during encoding\n");
+            return;
+        }
+
+        LOGI("Write packet %3" PRId64" (size=%5d)\n", pkt->pts, pkt->size);
+        fwrite(pkt->data, 1, pkt->size, outfile);
+        av_packet_unref(pkt);
+    }
+}
+
+void covert_img2video(const char *filename, const AVFrame *decodeFrame) {
+    const AVCodec *codec;
+    AVCodecContext *c = nullptr;
+    int i, ret, x, y;
+    FILE *f;
+    AVFrame *frame;
+    AVPacket *pkt;
+    uint8_t endcode[] = {0, 0, 1, 0xb7};
+
+    /* find the mpeg1video encoder */
+    const char *codec_name = "libx264";
+    AVCodecID codecId = AV_CODEC_ID_H264;
+    codec = avcodec_find_encoder(codecId);
+    if (!codec) {
+        LOGE("Codec '%s' not found\n", codec_name);
+        return;
+    }
+
+    c = avcodec_alloc_context3(codec);
+    if (!c) {
+        LOGE("Could not allocate video codec context\n");
+        return;
+    }
+
+    pkt = av_packet_alloc();
+    if (!pkt)
+        return;
+
+    /* put sample parameters */
+    c->bit_rate = 400000;
+    /* resolution must be a multiple of two */
+    c->width = decodeFrame->width;
+    c->height = decodeFrame->height;
+    /* frames per second */
+    c->time_base = (AVRational) {1, 25};
+    c->framerate = (AVRational) {25, 1};
+
+    /* emit one intra frame every ten frames
+     * check frame pict_type before passing frame
+     * to encoder, if frame->pict_type is AV_PICTURE_TYPE_I
+     * then gop_size is ignored and the output of encoder
+     * will always be I frame irrespective to gop_size
+     */
+    c->gop_size = 10;
+    c->max_b_frames = 1;
+    c->pix_fmt = AV_PIX_FMT_YUV420P;
+
+    if (codec->id == AV_CODEC_ID_H264)
+        av_opt_set(c->priv_data, "preset", "slow", 0);
+
+    /* open it */
+    ret = avcodec_open2(c, codec, NULL);
+    if (ret < 0) {
+        LOGE("Could not open codec: %s\n", av_err2str(ret));
+        return;
+    }
+
+    f = fopen(filename, "wb");
+    if (!f) {
+        LOGE("Could not open %s\n", filename);
+        return;
+    }
+
+    frame = av_frame_alloc();
+    if (!frame) {
+        LOGE("Could not allocate video frame\n");
+        return;
+    }
+    frame->format = c->pix_fmt;
+    frame->width = c->width;
+    frame->height = c->height;
+
+    ret = av_frame_get_buffer(frame, 0);
+    if (ret < 0) {
+        LOGE("Could not allocate the video frame data\n");
+        return ;
+    }
+
+    /* encodeVideo 1 second of video */
+    for (i = 0; i < 25; i++) {
+        fflush(stdout);
+
+        /* Make sure the frame data is writable.
+           On the first round, the frame is fresh from av_frame_get_buffer()
+           and therefore we know it is writable.
+           But on the next rounds, encodeVideo() will have called
+           avcodec_send_frame(), and the codec may have kept a reference to
+           the frame in its internal structures, that makes the frame
+           unwritable.
+           av_frame_make_writable() checks that and allocates a new buffer
+           for the frame only if necessary.
+         */
+        ret = av_frame_make_writable(frame);
+        if (ret < 0)
+            exit(1);
+
+        /* Prepare a dummy image.
+           In real code, this is where you would have your own logic for
+           filling the frame. FFmpeg does not care what you put in the
+           frame.
+         */
+        /* Y */
+        for (y = 0; y < c->height; y++) {
+            for (x = 0; x < c->width; x++) {
+                frame->data[0][y * frame->linesize[0] + x] = x + y + i * 3;
+            }
+        }
+
+        /* Cb and Cr */
+        for (y = 0; y < c->height / 2; y++) {
+            for (x = 0; x < c->width / 2; x++) {
+                frame->data[1][y * frame->linesize[1] + x] = 128 + y + i * 2;
+                frame->data[2][y * frame->linesize[2] + x] = 64 + x + i * 5;
+            }
+        }
+
+        frame->pts = i;
+
+        /* encodeVideo the image */
+        encodeVideo(c, frame, pkt, f);
+    }
+
+    /* flush the encoder */
+    encodeVideo(c, nullptr, pkt, f);
+
+    /* Add sequence end code to have a real MPEG file.
+       It makes only sense because this tiny examples writes packets
+       directly. This is called "elementary stream" and only works for some
+       codecs. To create a valid file, you usually need to write packets
+       into a proper file format or protocol; see mux.c.
+     */
+    if (codec->id == AV_CODEC_ID_MPEG1VIDEO || codec->id == AV_CODEC_ID_MPEG2VIDEO)
+        fwrite(endcode, 1, sizeof(endcode), f);
+    fclose(f);
+
+    avcodec_free_context(&c);
+    av_frame_free(&frame);
+    av_packet_free(&pkt);
+}
+
+
 int GySoPlayer::deal_picture_file() {
     int ret = 0;
     // 查找第一条流，可能是图片
     AVStream *stream = avFormatContext->streams[0];
     AVCodecParameters *codecParams = stream->codecpar;
     const AVCodec *codec = avcodec_find_decoder(codecParams->codec_id);
+    LOGE("Image codec found codec_id=%d", codecParams->codec_id);
     if (!codec) {
         LOGE("Image codec not found codec_id=%d", codecParams->codec_id);
         if (callbackHelper) {
@@ -133,6 +319,7 @@ int GySoPlayer::deal_picture_file() {
     AVFrame *frame = av_frame_alloc();
     while (av_read_frame(avFormatContext, packet) >= 0) {
         ret = avcodec_send_packet(codecCtx, packet);
+        logData(codecCtx->extradata, codecCtx->extradata_size);
         if (ret < 0) {
             LOGE("Error sending packet for decoding");
             break;
@@ -153,7 +340,7 @@ int GySoPlayer::deal_picture_file() {
         }
         av_packet_unref(packet);
     }
-
+    covert_img2video(videoPath, frame);
     av_frame_free(&frame);
     av_packet_free(&packet);
     avcodec_free_context(&codecCtx);
@@ -188,12 +375,12 @@ int GySoPlayer::playCameraFrame(uint8_t *data, size_t data_size) {
     ret = avcodec_send_packet(videoChannel->pContext, pPacket);
     if (ret < 0) {
         LOGE("Error sending packet to decoder");
-    } else{
+    } else {
 //        LOGE("Waiting for decoded frames...");
         ret = avcodec_receive_frame(videoChannel->pContext, frame);
         if (ret < 0) {
             LOGE("Error receiving frame from decoder");
-        }else{
+        } else {
 //            LOGE("Decoded frame with width: %d, height: %d", frame->width, frame->height);
 //            LOGI(
 //                    "Frame %c (%d) pts %d dts %d",
@@ -203,7 +390,7 @@ int GySoPlayer::playCameraFrame(uint8_t *data, size_t data_size) {
 //                    (int) (frame->pkt_dts)
 //            );
 //            LOGE("successfully get info videoChannel->pContext with width: %d, height: %d", videoChannel->pContext->width, videoChannel->pContext->height);
-            if(videoChannel && videoChannel->pContext->width>0){
+            if (videoChannel && videoChannel->pContext->width > 0) {
                 show_frame(videoChannel->pContext, frame);
             }
         }
@@ -245,8 +432,9 @@ int GySoPlayer::prepareForCamera() {
     return 0;
 }
 
-int isCameraSource(char *videoPath){
-    if (videoPath && (strcasecmp(videoPath, "CAMERA_FRONT") == 0 || strcasecmp(videoPath, "CAMERA_BACK") == 0)) {
+int isCameraSource(char *videoPath) {
+    if (videoPath &&
+        (strcasecmp(videoPath, "CAMERA_FRONT") == 0 || strcasecmp(videoPath, "CAMERA_BACK") == 0)) {
         LOGI("isCameraSource: %s", videoPath);
         return 1;
     }
@@ -254,7 +442,7 @@ int isCameraSource(char *videoPath){
     return 0;
 }
 
-int isPictureSource(char *videoPath){
+int isPictureSource(char *videoPath) {
     const char *fileExtension = strrchr(videoPath, '.');
     // 如果为显示图片，则显示后就返回
     if (fileExtension && (strcasecmp(fileExtension, ".png") == 0
@@ -269,20 +457,20 @@ int isPictureSource(char *videoPath){
     return 0;
 }
 
-int isMp4LocalSource(char *videoPath){
+int isMp4LocalSource(char *videoPath) {
     const char *fileExtension = strrchr(videoPath, '.');
     // 如果为显示图片，则显示后就返回
     if (fileExtension && (strcasecmp(fileExtension, ".mp4") == 0
-    || strcasecmp(fileExtension, ".avi") == 0
-    || strcasecmp(fileExtension, ".mkv") == 0
-    || strcasecmp(fileExtension, ".mov") == 0
-    || strcasecmp(fileExtension, ".webm") == 0
-    || strcasecmp(fileExtension, ".flv") == 0
-    || strcasecmp(fileExtension, ".ts") == 0
-    || strcasecmp(fileExtension, ".rmvb") == 0
-    || strcasecmp(fileExtension, ".rm") == 0
-    || strcasecmp(fileExtension, ".3gp") == 0
-    || strcasecmp(fileExtension, ".iso") == 0
+                          || strcasecmp(fileExtension, ".avi") == 0
+                          || strcasecmp(fileExtension, ".mkv") == 0
+                          || strcasecmp(fileExtension, ".mov") == 0
+                          || strcasecmp(fileExtension, ".webm") == 0
+                          || strcasecmp(fileExtension, ".flv") == 0
+                          || strcasecmp(fileExtension, ".ts") == 0
+                          || strcasecmp(fileExtension, ".rmvb") == 0
+                          || strcasecmp(fileExtension, ".rm") == 0
+                          || strcasecmp(fileExtension, ".3gp") == 0
+                          || strcasecmp(fileExtension, ".iso") == 0
     )) {
         LOGI("isMp4LocalSource: %s", videoPath);
         return 1;
@@ -294,7 +482,7 @@ int isMp4LocalSource(char *videoPath){
 void GySoPlayer::_prepare() {
     LOGI("prepare %s", videoPath);
     //如果播放的是摄像头数据
-    if(isCameraSource(videoPath)){
+    if (isCameraSource(videoPath)) {
         prepareForCamera();
         return;
     }
@@ -308,7 +496,7 @@ void GySoPlayer::_prepare() {
 //    AVDictionary * opt = NULL;
 //    av_dict_set(&opt,"timeout","3000000",0);
     const char *fileExtension = strrchr(videoPath, '.');
-    if (fileExtension && (strcasecmp(fileExtension, ".mp4") == 0)){
+    if (fileExtension && (strcasecmp(fileExtension, ".mp4") == 0)) {
         FILE *f = fopen(videoPath, "rb");
         if (!f) {
             LOGE("Could not open %s\n", videoPath);
@@ -397,7 +585,7 @@ void GySoPlayer::_prepare() {
             int fps = static_cast<int>(av_q2d(frame_rate));
             videoChannel = new VideoChannel(i, avCodecContext, time_base, fps);
             videoChannel->setRenderCallback(renderCallback);
-            videoChannel->isMp4LocalSource=isMp4LocalSource(videoPath);
+            videoChannel->isMp4LocalSource = isMp4LocalSource(videoPath);
             //如果没有音频就在视频中回调进度给UI
             if (!duration) {
                 //直播 不需要回调进度给Java
@@ -442,7 +630,7 @@ void *startInChildThread(void *args) {
 void GySoPlayer::start() {
     isPlaying = 1;
     // 如果为显示图片，则显示后就返回
-    if (isPictureSource(videoPath)){
+    if (isPictureSource(videoPath)) {
         LOGI("start show  image file: %s", videoPath);
         deal_picture_file();
         return;
@@ -456,7 +644,7 @@ void GySoPlayer::start() {
         LOGI("audioChannel->start() audioChannel=%d")
         audioChannel->start();
     }
-    if(isCameraSource(videoPath)){
+    if (isCameraSource(videoPath)) {
         LOGI("start show camera data: %s", videoPath);
         return;
     }
@@ -585,11 +773,11 @@ void GySoPlayer::stop() {
     auto *gySoPlayer = static_cast<GySoPlayer *>(this);
     gySoPlayer->isPlaying = 0;
     pthread_join(gySoPlayer->pThread_prepare, nullptr);
-    if (isPictureSource(videoPath) || isCameraSource(videoPath)){
-        if(isCameraSource(videoPath) && videoChannel){
+    if (isPictureSource(videoPath) || isCameraSource(videoPath)) {
+        if (isCameraSource(videoPath) && videoChannel) {
             avcodec_free_context(&videoChannel->pContext);
         }
-    }else{
+    } else {
         pthread_join(gySoPlayer->pThread_start, nullptr);
     }
     if (gySoPlayer->avFormatContext) {
@@ -597,10 +785,10 @@ void GySoPlayer::stop() {
         avformat_free_context(gySoPlayer->avFormatContext);
         gySoPlayer->avFormatContext = nullptr;
     }
-    if(gySoPlayer->audioChannel){
+    if (gySoPlayer->audioChannel) {
         DELETE(gySoPlayer->audioChannel);
     }
-    if(gySoPlayer->videoChannel){
+    if (gySoPlayer->videoChannel) {
         DELETE(gySoPlayer->videoChannel);
     }
     DELETE(gySoPlayer);

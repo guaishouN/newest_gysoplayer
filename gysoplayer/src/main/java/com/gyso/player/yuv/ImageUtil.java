@@ -213,7 +213,7 @@ public final class ImageUtil {
         YuvImage yuv = new YuvImage(nv21, ImageFormat.NV21, width, height, null);
         boolean success = yuv.compressToJpeg(cropRect == null ? new Rect(0, 0, width, height) : cropRect, 100, out);
         if (!success) {
-            throw new CodecFailedException("YuvImage failed to encode jpeg.", CodecFailedException.FailureType.ENCODE_FAILED);
+            throw new CodecFailedException("YuvImage failed to encodeVideo jpeg.", CodecFailedException.FailureType.ENCODE_FAILED);
         }
         return out.toByteArray();
     }

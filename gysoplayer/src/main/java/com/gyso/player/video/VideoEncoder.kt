@@ -137,7 +137,7 @@ class VideoEncoder(private val cameraPreviewInterface: CameraPreviewInterface) {
     fun encode(yuvBytes: ByteArray) {
         if (!isStarted) return
         val index = mIndexQueue.poll() ?: return
-//        Log.i(TAG, "encode: ${yuvBytes.size}")
+//        Log.i(TAG, "encodeVideo: ${yuvBytes.size}")
         val inputBuffer: ByteBuffer? = codec.getInputBuffer(index)
         inputBuffer?.clear()
         inputBuffer?.put(yuvBytes)

@@ -68,7 +68,7 @@ class MainActivity : AppCompatActivity() {
      * 准备video
      */
     private fun prepareVideo() {
-        val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final2.mp4";
+        val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "/jpgfiles/output_020.jpg";
         Log.i(TAG, "prepareVideo: videofile filePath=" + filePath)
         val file = File(filePath)
         if (!file.exists()) {
@@ -82,39 +82,40 @@ class MainActivity : AppCompatActivity() {
         }
         Log.i(TAG, "prepareVideo: videofile len=" + file.length())
         gySoPlayer = GySoPlayer(binding.surfaceview)
-        gySoPlayer.addCameraControl(lifecycleOwner = this)
-        gySoPlayer.play("tcp://127.0.0.1:10002")
+//        gySoPlayer.addCameraControl(lifecycleOwner = this)
+//        gySoPlayer.play("tcp://127.0.0.1:10002")
 //        gySoPlayer.play("tcp://172.26.4.25:8997")
 //        gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
-        handler.post{
-            Thread.sleep(5*1000)
-            gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
+        gySoPlayer.play(file.absolutePath)
+//        handler.post{
 //            Thread.sleep(5*1000)
+//            gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
+////            Thread.sleep(5*1000)
+////            gySoPlayer.play(file.absolutePath)
+//            Thread.sleep(5*1000)
+////            gySoPlayer.stop()
+////            gySoPlayer = GySoPlayer(binding.surfaceview)
+////            gySoPlayer.addCameraControl(lifecycleOwner = this)
+//            Log.i(TAG, "prepareVideo: ----------------last")
+//            var filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
+//            var file = File(filePath)
 //            gySoPlayer.play(file.absolutePath)
-            Thread.sleep(5*1000)
-//            gySoPlayer.stop()
-//            gySoPlayer = GySoPlayer(binding.surfaceview)
-//            gySoPlayer.addCameraControl(lifecycleOwner = this)
-            Log.i(TAG, "prepareVideo: ----------------last")
-            var filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
-            var file = File(filePath)
-            gySoPlayer.play(file.absolutePath)
-            Thread.sleep(5*1000)
-            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "/jpgfiles/output_020.jpg";
-            file = File(filePath)
-            gySoPlayer.play(file.absolutePath)
-            Thread.sleep(5*1000)
-            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final2.mp4";
-            file = File(filePath)
-            gySoPlayer.play(file.absolutePath)
-            Thread.sleep(5*1000)
-            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "demo.mp4";
-            file = File(filePath)
-            gySoPlayer.play(file.absolutePath)
-            Thread.sleep(5*1000)
-            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "output.mp4";
-            file = File(filePath)
-            gySoPlayer.play(file.absolutePath)
-        }
+//            Thread.sleep(5*1000)
+//            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "/jpgfiles/output_020.jpg";
+//            file = File(filePath)
+//            gySoPlayer.play(file.absolutePath)
+//            Thread.sleep(5*1000)
+//            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final2.mp4";
+//            file = File(filePath)
+//            gySoPlayer.play(file.absolutePath)
+//            Thread.sleep(5*1000)
+//            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "demo.mp4";
+//            file = File(filePath)
+//            gySoPlayer.play(file.absolutePath)
+//            Thread.sleep(5*1000)
+//            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "output.mp4";
+//            file = File(filePath)
+//            gySoPlayer.play(file.absolutePath)
+//        }
     }
 }

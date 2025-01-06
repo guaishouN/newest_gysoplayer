@@ -21,6 +21,7 @@ extern "C"{
 #include <libavformat/avformat.h>
 #include <libswresample/swresample.h>
 #include <libavutil/time.h>
+#include <libavutil/opt.h>
 }
 
 
