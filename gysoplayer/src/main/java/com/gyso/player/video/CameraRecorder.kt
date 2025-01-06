@@ -2,10 +2,7 @@ package pan.lib.camera_record.media.video
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import android.util.Size
-import android.view.Surface
-import androidx.camera.core.CameraControl
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -16,7 +13,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.google.common.util.concurrent.ListenableFuture
-import com.gyso.gysoplayerapplication.yuv.YuvUtil
+import com.gyso.player.yuv.YuvUtil
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 

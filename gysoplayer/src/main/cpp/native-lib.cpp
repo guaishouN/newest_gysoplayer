@@ -87,9 +87,9 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize, int
 extern "C"
 JNIEXPORT void
 JNICALL
-Java_com_gyso_gysoplayerapplication_GySoPlayer_playCameraFrame(JNIEnv *env, jobject thiz,
+Java_com_gyso_player_GySoPlayer_playCameraFrame(JNIEnv *env, jobject thiz,
                                                        jbyteArray data) {
-//    LOGI("Java_com_gyso_gysoplayerapplication_GySoPlayer_playCameraFrame");
+//    LOGI("Java_com_gyso_player_GySoPlayer_playCameraFrame");
     jsize sps_size = env->GetArrayLength(data);
     jbyte *sps_data_ptr = env->GetByteArrayElements(data, nullptr);
     if(gysoplayer){
@@ -101,7 +101,7 @@ Java_com_gyso_gysoplayerapplication_GySoPlayer_playCameraFrame(JNIEnv *env, jobj
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_gysoplayerapplication_GySoPlayer_prepareNative(JNIEnv *env, jobject thiz,jstring path) {
+Java_com_gyso_player_GySoPlayer_prepareNative(JNIEnv *env, jobject thiz,jstring path) {
     const char * filePath = env->GetStringUTFChars(path,0);
     CallbackHelper *callbackHelper =new CallbackHelper(javaVM,env,thiz);
     gysoplayer = new GySoPlayer(filePath, callbackHelper);
@@ -112,7 +112,7 @@ Java_com_gyso_gysoplayerapplication_GySoPlayer_prepareNative(JNIEnv *env, jobjec
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_gysoplayerapplication_GySoPlayer_startNative(JNIEnv *env, jobject thiz) {
+Java_com_gyso_player_GySoPlayer_startNative(JNIEnv *env, jobject thiz) {
     LOGI("startNative setWinWidthAndHeight")
     if(gysoplayer){
         pthread_mutex_lock(&mutex);
@@ -129,16 +129,16 @@ Java_com_gyso_gysoplayerapplication_GySoPlayer_startNative(JNIEnv *env, jobject 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_gysoplayerapplication_GySoPlayer_stopNative(JNIEnv *env, jobject thiz) {
+Java_com_gyso_player_GySoPlayer_stopNative(JNIEnv *env, jobject thiz) {
     if(gysoplayer){
-        LOGI("Java_com_gyso_gysoplayerapplication_GySoPlayer_stopNative")
+        LOGI("Java_com_gyso_player_GySoPlayer_stopNative")
         gysoplayer->stop();
     }
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_gysoplayerapplication_GySoPlayer_releaseNative(JNIEnv *env, jobject thiz) {
+Java_com_gyso_player_GySoPlayer_releaseNative(JNIEnv *env, jobject thiz) {
     pthread_mutex_lock(&mutex);
     if (window) {
         ANativeWindow_release(window);
@@ -151,7 +151,7 @@ Java_com_gyso_gysoplayerapplication_GySoPlayer_releaseNative(JNIEnv *env, jobjec
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_gysoplayerapplication_GySoPlayer_setSurfaceNative(JNIEnv *env, jobject thiz,
+Java_com_gyso_player_GySoPlayer_setSurfaceNative(JNIEnv *env, jobject thiz,
                                                                  jobject surface) {
     LOGI("setSurfaceNative")
     pthread_mutex_lock(&mutex);
@@ -172,7 +172,7 @@ Java_com_gyso_gysoplayerapplication_GySoPlayer_setSurfaceNative(JNIEnv *env, job
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_gysoplayerapplication_GySoPlayer_setViewport(JNIEnv *env, jobject thiz,
+Java_com_gyso_player_GySoPlayer_setViewport(JNIEnv *env, jobject thiz,
                                                                 jint vpWidht, jint vpHeight) {
 
     pthread_mutex_lock(&mutex);
@@ -186,7 +186,7 @@ Java_com_gyso_gysoplayerapplication_GySoPlayer_setViewport(JNIEnv *env, jobject 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gyso_gysoplayerapplication_GySoPlayer_seekNative(JNIEnv *env,
+Java_com_gyso_player_GySoPlayer_seekNative(JNIEnv *env,
         jobject thiz,
         jint play_progress) {
     if(gysoplayer){
@@ -195,7 +195,7 @@ Java_com_gyso_gysoplayerapplication_GySoPlayer_seekNative(JNIEnv *env,
 }
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_gyso_gysoplayerapplication_GySoPlayer_getDurationNative(JNIEnv *env,
+Java_com_gyso_player_GySoPlayer_getDurationNative(JNIEnv *env,
         jobject thiz) {
     if(gysoplayer){
         return gysoplayer->getDuration();
@@ -206,7 +206,7 @@ Java_com_gyso_gysoplayerapplication_GySoPlayer_getDurationNative(JNIEnv *env,
 
 extern "C"
 JNIEXPORT jbyteArray JNICALL
-Java_com_gyso_gysoplayerapplication_GySoPlayer_yuv420ToNV21(JNIEnv *env, jobject thiz, jint width,
+Java_com_gyso_player_GySoPlayer_yuv420ToNV21(JNIEnv *env, jobject thiz, jint width,
                                                    jint height, jobject byte_buffer_y,
                                                    jint byte_buffer_y_length,
                                                    jobject byte_buffer_u,
@@ -241,7 +241,7 @@ Java_com_gyso_gysoplayerapplication_GySoPlayer_yuv420ToNV21(JNIEnv *env, jobject
 
 extern "C"
 JNIEXPORT jbyteArray JNICALL
-Java_com_gyso_gysoplayerapplication_GySoPlayer_yuvToNV21(JNIEnv *env, jobject thiz, jint width,
+Java_com_gyso_player_GySoPlayer_yuvToNV21(JNIEnv *env, jobject thiz, jint width,
                                                 jint height, jobject byte_buffer_y,
                                                 jint byte_buffer_y_length,
                                                 jobject byte_buffer_u,

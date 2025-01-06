@@ -1,4 +1,4 @@
-package com.gyso.gysoplayerapplication
+package com.gyso.player
 
 import android.graphics.Bitmap
 import android.media.MediaCodec
@@ -9,8 +9,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import androidx.camera.core.ImageProxy
 import androidx.lifecycle.LifecycleOwner
-import com.gyso.gysoplayerapplication.yuv.BitmapUtils
-import pan.lib.camera_record.media.StreamManager
+import com.gyso.player.yuv.BitmapUtils
 import pan.lib.camera_record.media.video.CameraPreviewInterface
 import java.nio.ByteBuffer
 
@@ -18,7 +17,7 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
     private var onStatCallback: OnStatCallback? = null
     private var surfaceHolder: SurfaceHolder? = null
     private var isSurfaceReady = false
-    private var streamManager:StreamManager ? = null
+    private var streamManager: StreamManager? = null
     private var surfaceView:SurfaceView ? = null
     private var lastDataSource:String? = null
     init {
@@ -218,7 +217,7 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
     }
 }
 
-private fun createCameraPreviewInterface(player:GySoPlayer, sreviewView: SurfaceView, onBitmapReady: (Bitmap) -> Unit): CameraPreviewInterface {
+private fun createCameraPreviewInterface(player: GySoPlayer, sreviewView: SurfaceView, onBitmapReady: (Bitmap) -> Unit): CameraPreviewInterface {
     return object : CameraPreviewInterface {
         val needSaveH264ToLocal = true // 是否保存h264到本地
         var width:Int = 0

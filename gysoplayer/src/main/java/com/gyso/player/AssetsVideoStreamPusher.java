@@ -1,4 +1,4 @@
-package com.gyso.gysoplayerapplication;
+package com.gyso.player;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;

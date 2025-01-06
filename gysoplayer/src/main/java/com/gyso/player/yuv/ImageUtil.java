@@ -1,4 +1,4 @@
-package com.gyso.gysoplayerapplication.yuv;
+package com.gyso.player.yuv;
 /*
  * Copyright 2020 The Android Open Source Project
  *

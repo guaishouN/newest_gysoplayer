@@ -1,4 +1,4 @@
-package pan.lib.camera_record.media
+package com.gyso.player
 
 import android.content.Context
 import androidx.lifecycle.LifecycleOwner

@@ -1,4 +1,4 @@
-package com.gyso.gysoplayerapplication.yuv;
+package com.gyso.player.yuv;
 
 import android.media.Image;
 

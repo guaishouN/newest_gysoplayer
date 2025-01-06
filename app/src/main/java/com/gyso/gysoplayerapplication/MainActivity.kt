@@ -1,21 +1,17 @@
 package com.gyso.gysoplayerapplication
 
-import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
-import android.view.View
-import android.widget.SeekBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.LifecycleOwner
-import com.gyso.gysoplayerapplication.GySoPlayer.OnStatCallback
 import com.gyso.gysoplayerapplication.databinding.ActivityMainBinding
+import com.gyso.player.AssetsVideoStreamPusher
+import com.gyso.player.GySoPlayer
 import java.io.File
-import kotlin.math.log
 
 
 class MainActivity : AppCompatActivity() {

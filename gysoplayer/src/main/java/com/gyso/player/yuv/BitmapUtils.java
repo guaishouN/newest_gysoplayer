@@ -1,4 +1,4 @@
-package com.gyso.gysoplayerapplication.yuv;
+package com.gyso.player.yuv;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
