@@ -58,7 +58,7 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
 
     }
 
-    fun stop() {
+    private fun stop() {
         streamManager?.stop()
         stopNative()
     }

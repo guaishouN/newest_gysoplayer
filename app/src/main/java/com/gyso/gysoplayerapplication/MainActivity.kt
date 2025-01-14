@@ -78,44 +78,43 @@ class MainActivity : AppCompatActivity() {
                 "文件不存在",
                 Toast.LENGTH_SHORT
             ).show()
-            return
         }
         Log.i(TAG, "prepareVideo: videofile len=" + file.length())
         gySoPlayer = GySoPlayer(binding.surfaceview)
-//        gySoPlayer.addCameraControl(lifecycleOwner = this)
-//        gySoPlayer.play("tcp://127.0.0.1:10002")
+        gySoPlayer.addCameraControl(lifecycleOwner = this)
+        handler.post{
+           gySoPlayer.play("tcp://127.0.0.1:10002")
+            Thread.sleep(5000)
 //        gySoPlayer.play("tcp://172.26.4.25:8997")
 //        gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
-        gySoPlayer.play(file.absolutePath)
-//        handler.post{
+            gySoPlayer.play(file.absolutePath)
+            Thread.sleep(5000)
+            gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
 //            Thread.sleep(5*1000)
-//            gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
-////            Thread.sleep(5*1000)
-////            gySoPlayer.play(file.absolutePath)
-//            Thread.sleep(5*1000)
-////            gySoPlayer.stop()
-////            gySoPlayer = GySoPlayer(binding.surfaceview)
-////            gySoPlayer.addCameraControl(lifecycleOwner = this)
-//            Log.i(TAG, "prepareVideo: ----------------last")
-//            var filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
-//            var file = File(filePath)
 //            gySoPlayer.play(file.absolutePath)
-//            Thread.sleep(5*1000)
-//            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "/jpgfiles/output_020.jpg";
-//            file = File(filePath)
+            Thread.sleep(5000)
+            var filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final1.mp4";
+            var file = File(filePath)
 //            gySoPlayer.play(file.absolutePath)
-//            Thread.sleep(5*1000)
-//            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final2.mp4";
-//            file = File(filePath)
-//            gySoPlayer.play(file.absolutePath)
-//            Thread.sleep(5*1000)
-//            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "demo.mp4";
-//            file = File(filePath)
-//            gySoPlayer.play(file.absolutePath)
-//            Thread.sleep(5*1000)
-//            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "output.mp4";
-//            file = File(filePath)
-//            gySoPlayer.play(file.absolutePath)
-//        }
+            gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
+            Thread.sleep(5000)
+            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "/jpgfiles/output_020.jpg";
+            file = File(filePath)
+            gySoPlayer.play(file.absolutePath)
+            Thread.sleep(5000)
+            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "final2.mp4";
+            file = File(filePath)
+            gySoPlayer.play(file.absolutePath)
+            Thread.sleep(5000)
+            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "demo.mp4";
+            file = File(filePath)
+            gySoPlayer.play(file.absolutePath)
+            Thread.sleep(5000)
+            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "output.mp4";
+            file = File(filePath)
+            gySoPlayer.play(file.absolutePath)
+            Thread.sleep(5000)
+            gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
+        }
     }
 }

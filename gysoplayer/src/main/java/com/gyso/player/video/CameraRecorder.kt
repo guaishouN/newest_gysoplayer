@@ -33,14 +33,16 @@ class CameraRecorder(
     private val videoEncoder = VideoEncoder(cameraPreviewInterface)
 
     fun startRecording() {
-        if (isRecording.get()) return // 已经在录制中
-
+        if (isRecording.get())
+            return // 已经在录制中
+        isEncoderInitialized = false
         isRecording.set(true)
         startCameraPreview()
     }
 
     fun stopRecording() {
-        if (!isRecording.get()) return // 未在录制中
+        if (!isRecording.get())
+            return // 未在录制中
         isRecording.set(false)
         videoEncoder.stop()
     }

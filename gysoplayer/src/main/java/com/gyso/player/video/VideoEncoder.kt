@@ -74,7 +74,14 @@ class VideoEncoder(private val cameraPreviewInterface: CameraPreviewInterface) {
                 index: Int,
                 info: MediaCodec.BufferInfo
             ) {
-                val outputBuffer = codec.getOutputBuffer(index)
+                var outputBuffer: ByteBuffer? = null
+                try {
+                    outputBuffer = codec.getOutputBuffer(index)
+                }catch (e: IllegalStateException){
+                    e.printStackTrace()
+                    return
+                }
+
                 if (outputBuffer != null) {
                     if (needInsertSpsPps && info.flags and MediaCodec.BUFFER_FLAG_KEY_FRAME != 0) {
                         // Insert SPS and PPS before each I-frame
@@ -138,6 +145,9 @@ class VideoEncoder(private val cameraPreviewInterface: CameraPreviewInterface) {
         if (!isStarted) return
         val index = mIndexQueue.poll() ?: return
 //        Log.i(TAG, "encodeVideo: ${yuvBytes.size}")
+        if (index==0 || index==1){
+            return
+        }
         val inputBuffer: ByteBuffer? = codec.getInputBuffer(index)
         inputBuffer?.clear()
         inputBuffer?.put(yuvBytes)
@@ -149,8 +159,11 @@ class VideoEncoder(private val cameraPreviewInterface: CameraPreviewInterface) {
     // 停止编码
     fun stop() {
         isStarted = false
-        codec.stop()
-        codec.release()
+        mIndexQueue.clear()
+        if(::codec.isInitialized){
+            codec.stop()
+            codec.release()
+        }
         startTime = 0L
     }
 

@@ -27,6 +27,7 @@ GySoPlayer::GySoPlayer(const char *string, CallbackHelper *callbackHelper) {
 
 
 GySoPlayer::~GySoPlayer() {
+    LOGI("~GySoPlayer invoke!!")
     DELETE(videoPath);
     DELETE(callbackHelper);
     pthread_mutex_destroy(&seek_mutex);
@@ -521,6 +522,7 @@ void GySoPlayer::_prepare() {
         if (callbackHelper) {
             callbackHelper->onPrepared(THREAD_CHILD);
         }
+        deal_picture_file();
         return;
     }
 
@@ -632,7 +634,6 @@ void GySoPlayer::start() {
     // 如果为显示图片，则显示后就返回
     if (isPictureSource(videoPath)) {
         LOGI("start show  image file: %s", videoPath);
-        deal_picture_file();
         return;
     }
     if (videoChannel) {
@@ -762,24 +763,38 @@ int GySoPlayer::getDuration() {
 }
 
 void GySoPlayer::stop() {
-    callbackHelper = 0;
+    callbackHelper = nullptr;
     if (audioChannel) {
-        audioChannel->callbackHelper = 0;
+        audioChannel->callbackHelper = nullptr;
     }
     if (videoChannel) {
-        videoChannel->callbackHelper = 0;
+        videoChannel->callbackHelper = nullptr;
     }
     //图片没有打开
+    LOGI("stopping path: %s", videoPath);
     auto *gySoPlayer = static_cast<GySoPlayer *>(this);
-    gySoPlayer->isPlaying = 0;
     pthread_join(gySoPlayer->pThread_prepare, nullptr);
     if (isPictureSource(videoPath) || isCameraSource(videoPath)) {
         if (isCameraSource(videoPath) && videoChannel) {
             avcodec_free_context(&videoChannel->pContext);
         }
-    } else {
-        pthread_join(gySoPlayer->pThread_start, nullptr);
+    } else if(gySoPlayer->isPlaying){
+        gySoPlayer->isPlaying = false;
+        LOGI("stop111")
+        int ret = pthread_join(gySoPlayer->pThread_start, nullptr);
+        if (ret != 0) {
+            if (ret == EINVAL) {
+                LOGI("Thread is not joinable or invalid.\n");
+            } else if (ret == ESRCH) {
+                LOGI( "No thread with the specified ID found.\n");
+            } else if (ret == EDEADLK) {
+                LOGI("Deadlock detected.\n");
+            } else {
+                LOGI("Unknown error: %d\n", ret);
+            }
+        }
     }
+    gySoPlayer->isPlaying = false;
     if (gySoPlayer->avFormatContext) {
         avformat_close_input(&gySoPlayer->avFormatContext);
         avformat_free_context(gySoPlayer->avFormatContext);
@@ -791,5 +806,6 @@ void GySoPlayer::stop() {
     if (gySoPlayer->videoChannel) {
         DELETE(gySoPlayer->videoChannel);
     }
+    LOGI("stopping DELETE gySoPlayer")
     DELETE(gySoPlayer);
 }
