@@ -15,14 +15,14 @@ GySoPlayer::GySoPlayer(const char *string, CallbackHelper *callbackHelper) {
     const AVCodec *codec = nullptr;
     void *iter = nullptr;
 
-//    LOGI("Supported codecs:\n")
-//    while ((codec = av_codec_iterate(&iter))) {
-//        LOGI("list ffmpeg codec--->%s  %d  %s   %s",
-//             (av_codec_is_encoder(codec) ? "Encoder" : "Decoder"),
-//             codec->id,
-//             codec->name,
-//             codec->long_name);
-//    }
+    LOGI("Supported codecs:\n")
+    while ((codec = av_codec_iterate(&iter))) {
+        LOGI("list ffmpeg codec--->%s  %d  %s   %s",
+             (av_codec_is_encoder(codec) ? "Encoder" : "Decoder"),
+             codec->id,
+             codec->name,
+             codec->long_name);
+    }
 }
 
 

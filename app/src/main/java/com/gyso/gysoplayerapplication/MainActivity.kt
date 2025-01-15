@@ -68,7 +68,7 @@ class MainActivity : AppCompatActivity() {
      * 准备video
      */
     private fun prepareVideo() {
-        val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "/jpgfiles/output_020.jpg";
+        val filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "/pngfiles/output_001.png";
         Log.i(TAG, "prepareVideo: videofile filePath=" + filePath)
         val file = File(filePath)
         if (!file.exists()) {
@@ -82,8 +82,10 @@ class MainActivity : AppCompatActivity() {
         Log.i(TAG, "prepareVideo: videofile len=" + file.length())
         gySoPlayer = GySoPlayer(binding.surfaceview)
         gySoPlayer.addCameraControl(lifecycleOwner = this)
+        gySoPlayer.play(file.absolutePath)
         handler.post{
-           gySoPlayer.play("tcp://127.0.0.1:10002")
+            Thread.sleep(5000)
+           gySoPlayer.play("https://samplelib.com/lib/preview/mp4/sample-20s.mp4")
             Thread.sleep(5000)
 //        gySoPlayer.play("tcp://172.26.4.25:8997")
 //        gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
@@ -98,7 +100,7 @@ class MainActivity : AppCompatActivity() {
 //            gySoPlayer.play(file.absolutePath)
             gySoPlayer.play(GySoPlayer.CAMERA_FRONT)
             Thread.sleep(5000)
-            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "/jpgfiles/output_020.jpg";
+            filePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "/pngfiles/output_020.png";
             file = File(filePath)
             gySoPlayer.play(file.absolutePath)
             Thread.sleep(5000)
