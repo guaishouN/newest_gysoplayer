@@ -270,3 +270,12 @@ Java_com_gyso_player_GySoPlayer_yuvToNV21(JNIEnv *env, jobject thiz, jint width,
     }
     return nullptr;
 }
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_gyso_player_GySoPlayer_isPacketCallbackNative(JNIEnv *env, jobject thiz,
+                                                       jboolean is_callback) {
+    bool isPacketCallbackEnabled = (is_callback == JNI_TRUE);
+    if (gysoplayer){
+        gysoplayer->isPacketCallbackEnabled = isPacketCallbackEnabled;
+    }
+}

@@ -58,6 +58,8 @@ public:
     int playCameraFrame(uint8_t *data, size_t data_size);
 
     int prepareForCamera();
+    bool isPacketCallbackEnabled = false;
+    CallbackHelper *callbackHelper = nullptr;
 private:
     char * videoPath = nullptr;
     bool isPlaying;
@@ -65,7 +67,6 @@ private:
     AudioChannel *audioChannel = nullptr;
     pthread_t pThread_prepare;
     pthread_t pThread_start;
-    CallbackHelper *callbackHelper = nullptr;
     AVFormatContext *avFormatContext = nullptr;
     RenderCallback renderCallback;
     int duration;

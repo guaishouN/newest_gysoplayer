@@ -15,14 +15,14 @@ GySoPlayer::GySoPlayer(const char *string, CallbackHelper *callbackHelper) {
     const AVCodec *codec = nullptr;
     void *iter = nullptr;
 
-    LOGI("Supported codecs:\n")
-    while ((codec = av_codec_iterate(&iter))) {
-        LOGI("list ffmpeg codec--->%s  %d  %s   %s",
-             (av_codec_is_encoder(codec) ? "Encoder" : "Decoder"),
-             codec->id,
-             codec->name,
-             codec->long_name);
-    }
+//    LOGI("Supported codecs:\n")
+//    while ((codec = av_codec_iterate(&iter))) {
+//        LOGI("list ffmpeg codec--->%s  %d  %s   %s",
+//             (av_codec_is_encoder(codec) ? "Encoder" : "Decoder"),
+//             codec->id,
+//             codec->name,
+//             codec->long_name);
+//    }
 }
 
 
@@ -115,7 +115,7 @@ void logData(uint8_t *data, int data_size) {
 }
 
 
-void encodeVideo(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
+void encodeVideo(GySoPlayer * gysoplayer, AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
                  FILE *outfile) {
     int ret;
 
@@ -140,12 +140,15 @@ void encodeVideo(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
 
         LOGI("Write packet %3" PRId64" (size=%5d)\n", pkt->pts, pkt->size);
         fwrite(pkt->data, 1, pkt->size, outfile);
+        if(gysoplayer && gysoplayer->isPacketCallbackEnabled && gysoplayer->callbackHelper){
+            gysoplayer->callbackHelper->onPacketCallback(THREAD_CHILD, pkt->data, pkt->size);
+        }
 //        logData(pkt->data, pkt->size);
         av_packet_unref(pkt);
     }
 }
 
-void covert_img2video(const char *filename, const AVFrame *decodeFrame) {
+void covert_img2video(GySoPlayer * gysoplayer, const char *filename, const AVFrame *decodeFrame) {
     const AVCodec *codec;
     AVCodecContext *c = nullptr;
     int i, ret, x, y;
@@ -235,11 +238,11 @@ void covert_img2video(const char *filename, const AVFrame *decodeFrame) {
         }
 
         frame->pts = i;
-        encodeVideo(c, frame, pkt, f);
+        encodeVideo(gysoplayer, c, frame, pkt, f);
     }
 
     /* flush the encoder */
-    encodeVideo(c, nullptr, pkt, f);
+    encodeVideo(gysoplayer, c, nullptr, pkt, f);
     fclose(f);
     avcodec_free_context(&c);
     av_frame_free(&frame);
@@ -303,7 +306,7 @@ int GySoPlayer::deal_picture_file() {
         }
         av_packet_unref(packet);
     }
-    covert_img2video(videoPath, frame);
+    covert_img2video(this, videoPath, frame);
     av_frame_free(&frame);
     av_packet_free(&packet);
     avcodec_free_context(&codecCtx);
@@ -317,7 +320,6 @@ int GySoPlayer::playCameraFrame(uint8_t *data, size_t data_size) {
         LOGE("Invalid input parameters");
         return -1;
     }
-
     AVPacket *pPacket = av_packet_alloc();
     if (!pPacket) {
         LOGE("Failed to allocate AVPacket");
@@ -335,6 +337,10 @@ int GySoPlayer::playCameraFrame(uint8_t *data, size_t data_size) {
     int ret = 0;
     pPacket->data = data;
     pPacket->size = (int) data_size;
+//    if(isPacketCallbackEnabled && callbackHelper){
+//        //相机数据回调会崩溃!!!????
+//        callbackHelper->onPacketCallback(THREAD_MAIN, data, (int)data_size);
+//    }
     ret = avcodec_send_packet(videoChannel->pContext, pPacket);
     if (ret < 0) {
         LOGE("Error sending packet to decoder");
@@ -647,6 +653,9 @@ void GySoPlayer::_start() {
         if (!ret) {
             //视频
             if (videoChannel && videoChannel->stream_index == packet->stream_index) {
+                if(isPacketCallbackEnabled && callbackHelper){
+                    callbackHelper->onPacketCallback(THREAD_CHILD, packet->data, packet->size);
+                }
                 videoChannel->packets.push(packet);
                 //音频
             } else if (audioChannel && audioChannel->stream_index == packet->stream_index) {

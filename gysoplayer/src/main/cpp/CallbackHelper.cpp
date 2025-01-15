@@ -14,6 +14,7 @@ CallbackHelper::CallbackHelper(JavaVM *pVm, JNIEnv *pEnv, jobject pJobject){
     jmd_prepared_methodId = pEnv->GetMethodID(clazz, "onPrepared", "()V");
     jmd_error_methodId = pEnv->GetMethodID(clazz,"onError","(I)V");
     jmd_progress_methodId = pEnv->GetMethodID(clazz,"onProgress","(I)V");
+    jmd_packet_callback_methodId = pEnv->GetMethodID(clazz,"onPacketCallback","([B)V");
 }
 CallbackHelper::~CallbackHelper(){
     javaVM = 0;
@@ -59,5 +60,23 @@ void CallbackHelper::onProgress(int threadType, int currentPlayTime) {
             env_child->CallVoidMethod(instance,jmd_progress_methodId,currentPlayTime);
             javaVM->DetachCurrentThread();
         }
+    }
+}
+
+
+void CallbackHelper::onPacketCallback(int threadType, uint8_t *data, int data_size) {
+    if (threadType == THREAD_MAIN) {
+        jbyteArray nv21ByteArray = pEnv->NewByteArray(data_size);
+        pEnv->SetByteArrayRegion(nv21ByteArray, 0, data_size, (jbyte *) data);
+        //主线程
+        pEnv->CallVoidMethod(instance, jmd_packet_callback_methodId, nv21ByteArray, data_size);
+    } else {
+        //子线程
+        JNIEnv *env_child;
+        javaVM->AttachCurrentThread(&env_child, nullptr);
+        jbyteArray nv21ByteArray = env_child->NewByteArray(data_size);
+        env_child->SetByteArrayRegion(nv21ByteArray, 0, data_size, (jbyte *) data);
+        env_child->CallVoidMethod(instance, jmd_packet_callback_methodId, nv21ByteArray);
+        javaVM->DetachCurrentThread();
     }
 }

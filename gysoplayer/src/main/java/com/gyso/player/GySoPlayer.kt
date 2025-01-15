@@ -22,6 +22,7 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
     private var lastDataSource:String? = null
     init {
         setSurfaceView(surfaceView)
+        SimpleH264TcpIpServer.instance.init()
     }
 
     fun addCameraControl(lifecycleOwner: LifecycleOwner){
@@ -46,8 +47,9 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
             }
             surfaceView?.let {
                 prepareNative(dataSource)
+                isPacketCallbackNative(true)
                 setViewport(it.width, it.height)
-                Log.i(TAG, "play---------------: ${it.width} ${it.height}")
+                Log.i(TAG, "play--------------->: ${it.width} ${it.height}")
             }
         }
         lastDataSource = dataSource
@@ -60,6 +62,7 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
 
     private fun stop() {
         streamManager?.stop()
+        isPacketCallbackNative(false)
         stopNative()
     }
 
@@ -118,6 +121,12 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
         }
     }
 
+    //如果设置了isPacketCallbackNative(true)就会统一回调播放的每帧H264 packet(NAL)
+    fun onPacketCallback(packet:ByteArray){
+        Log.i(TAG, "onPacketCallback: "+packet.size)
+        SimpleH264TcpIpServer.instance.send(packet)
+    }
+
     fun setOnStatCallback(onStatCallback: OnStatCallback?) {
         this.onStatCallback = onStatCallback
     }
@@ -151,13 +160,17 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
     }
 
     interface OnStatCallback {
+        //每次新播放都会回调
         fun onPrepared()
+        //错误回调
         fun onError(errorCode: Int)
         fun onProgress(currentPlayTime: Int)
-        fun onFinished()
     }
 
-
+    fun showCameraFrame(data:ByteArray){
+        onPacketCallback(data)
+        playCameraFrame(data)
+    }
 
     /**
      * 本地方法接口
@@ -168,7 +181,8 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
     private external fun releaseNative()
     private external fun setSurfaceNative(surface: Surface)
     private external fun seekNative(playProgress: Int)
-    external fun playCameraFrame(data:ByteArray)
+    private external fun isPacketCallbackNative(isCallback: Boolean)
+    private external fun playCameraFrame(data:ByteArray)
     private external fun setViewport(vpWidth:Int, vpHeight:Int)
     external fun yuvToNV21(width: Int, height: Int, byteBufferY: ByteBuffer,byteBufferYLength: Int,
         byteBufferU: ByteBuffer,byteBufferULength: Int,byteBufferV: ByteBuffer,byteBufferVLength: Int,): ByteArray
@@ -262,8 +276,8 @@ private fun createCameraPreviewInterface(player: GySoPlayer, sreviewView: Surfac
             "CameraPreviewScreen".logByteBufferContent("PPS", pps)
             "CameraPreviewScreen".logByteBufferContent("VPS", vps)//only for H265
             if (pps?.array() != null && vps?.array() != null) {
-                player.playCameraFrame(pps.array())
-                player.playCameraFrame(vps.array())
+                player.showCameraFrame(pps.array())
+                player.showCameraFrame(vps.array())
             }
         }
 
@@ -277,8 +291,7 @@ private fun createCameraPreviewInterface(player: GySoPlayer, sreviewView: Surfac
                 data = ByteArray(h264Buffer.remaining())
                 h264Buffer.get(data)
             }
-            //需要注意这里是不是阻塞的
-            player.playCameraFrame(data)
+            player.showCameraFrame(data)
 //            Log.i("ddd", "onVideoBuffer: len"+data.size)
 //            h264Buffer.rewind()
 //            "onVideoBuffer".logByteBufferContent("NAL", h264Buffer)

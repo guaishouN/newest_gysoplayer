@@ -13,12 +13,14 @@ public:
     void onPrepared(int threadType);
     void onError(int threadType, int errorCode);
     void onProgress(int threadType, int currentPlayTime);
+    void onPacketCallback(int threadType, uint8_t *data, int data_size);
     JavaVM *javaVM = nullptr;
     JNIEnv *pEnv = nullptr;
     jobject instance;
     jmethodID jmd_prepared_methodId;
     jmethodID jmd_error_methodId;
-    jmethodID jmd_progress_methodId=0;
+    jmethodID jmd_progress_methodId=nullptr;
+    jmethodID jmd_packet_callback_methodId=nullptr;
 };
 
 
