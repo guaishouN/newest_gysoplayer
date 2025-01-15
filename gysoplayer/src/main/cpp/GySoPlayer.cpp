@@ -140,6 +140,7 @@ void encodeVideo(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
 
         LOGI("Write packet %3" PRId64" (size=%5d)\n", pkt->pts, pkt->size);
         fwrite(pkt->data, 1, pkt->size, outfile);
+//        logData(pkt->data, pkt->size);
         av_packet_unref(pkt);
     }
 }
@@ -161,7 +162,7 @@ void covert_img2video(const char *filename, const AVFrame *decodeFrame) {
         LOGE("Codec '%s' not found\n", codec_name);
         return;
     }
-
+    LOGE("Codec '%s found!!!!\n", codec_name);
     c = avcodec_alloc_context3(codec);
     if (!c) {
         LOGE("Could not allocate video codec context\n");
@@ -171,22 +172,12 @@ void covert_img2video(const char *filename, const AVFrame *decodeFrame) {
     pkt = av_packet_alloc();
     if (!pkt)
         return;
-
-    /* put sample parameters */
     c->bit_rate = 400000;
-    /* resolution must be a multiple of two */
     c->width = decodeFrame->width;
     c->height = decodeFrame->height;
     /* frames per second */
     c->time_base = (AVRational) {1, 25};
     c->framerate = (AVRational) {25, 1};
-
-    /* emit one intra frame every ten frames
-     * check frame pict_type before passing frame
-     * to encoder, if frame->pict_type is AV_PICTURE_TYPE_I
-     * then gop_size is ignored and the output of encoder
-     * will always be I frame irrespective to gop_size
-     */
     c->gop_size = 10;
     c->max_b_frames = 1;
     c->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -195,13 +186,13 @@ void covert_img2video(const char *filename, const AVFrame *decodeFrame) {
         av_opt_set(c->priv_data, "preset", "slow", 0);
 
     /* open it */
-    ret = avcodec_open2(c, codec, NULL);
+    ret = avcodec_open2(c, codec, nullptr);
     if (ret < 0) {
         LOGE("Could not open codec: %s\n", av_err2str(ret));
         return;
     }
 
-    f = fopen(filename, "wb");
+    f = fopen(filename, "rb");
     if (!f) {
         LOGE("Could not open %s\n", filename);
         return;
@@ -225,26 +216,9 @@ void covert_img2video(const char *filename, const AVFrame *decodeFrame) {
     /* encodeVideo 1 second of video */
     for (i = 0; i < 25; i++) {
         fflush(stdout);
-
-        /* Make sure the frame data is writable.
-           On the first round, the frame is fresh from av_frame_get_buffer()
-           and therefore we know it is writable.
-           But on the next rounds, encodeVideo() will have called
-           avcodec_send_frame(), and the codec may have kept a reference to
-           the frame in its internal structures, that makes the frame
-           unwritable.
-           av_frame_make_writable() checks that and allocates a new buffer
-           for the frame only if necessary.
-         */
         ret = av_frame_make_writable(frame);
         if (ret < 0)
             exit(1);
-
-        /* Prepare a dummy image.
-           In real code, this is where you would have your own logic for
-           filling the frame. FFmpeg does not care what you put in the
-           frame.
-         */
         /* Y */
         for (y = 0; y < c->height; y++) {
             for (x = 0; x < c->width; x++) {
@@ -261,24 +235,12 @@ void covert_img2video(const char *filename, const AVFrame *decodeFrame) {
         }
 
         frame->pts = i;
-
-        /* encodeVideo the image */
         encodeVideo(c, frame, pkt, f);
     }
 
     /* flush the encoder */
     encodeVideo(c, nullptr, pkt, f);
-
-    /* Add sequence end code to have a real MPEG file.
-       It makes only sense because this tiny examples writes packets
-       directly. This is called "elementary stream" and only works for some
-       codecs. To create a valid file, you usually need to write packets
-       into a proper file format or protocol; see mux.c.
-     */
-    if (codec->id == AV_CODEC_ID_MPEG1VIDEO || codec->id == AV_CODEC_ID_MPEG2VIDEO)
-        fwrite(endcode, 1, sizeof(endcode), f);
     fclose(f);
-
     avcodec_free_context(&c);
     av_frame_free(&frame);
     av_packet_free(&pkt);

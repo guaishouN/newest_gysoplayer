@@ -7,7 +7,7 @@ set(FFMPEG_LIB_DIR ${FFMPEG_DIR}/libs/${ANDROID_ABI})
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L ${FFMPEG_DIR}/libs/${CMAKE_ANDROID_ARCH_ABI}")
 message(WARNING "ffmpeg dir: ${FFMPEG_LIB_DIR}")
-file(GLOB FFMPEG_LIBS "${FFMPEG_LIB_DIR}/*.a")
+file(GLOB FFMPEG_LIBS "${FFMPEG_LIB_DIR}/*.so")
 message(WARNING "Found precompiled libraries: ${FFMPEG_LIBS}")
 
 include_directories(${FFMPEG_DIR}/include/)
