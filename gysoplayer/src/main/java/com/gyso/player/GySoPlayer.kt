@@ -124,7 +124,7 @@ class GySoPlayer(surfaceView: SurfaceView) : SurfaceHolder.Callback {
     //如果设置了isPacketCallbackNative(true)就会统一回调播放的每帧H264 packet(NAL)
     @OptIn(ExperimentalStdlibApi::class)
     private fun onPacketCallback(packet:ByteArray){
-//        Log.i(TAG, "onPacketCallback: "+packet.size+"  "+packet.toHexString(0,packet.size,HexFormat.Default))
+        Log.i(TAG, "onPacketCallback: "+packet.size+"  "+packet.toHexString(0,packet.size,HexFormat.Default))
         SimpleH264TcpIpServer.instance.send(packet)
     }
 

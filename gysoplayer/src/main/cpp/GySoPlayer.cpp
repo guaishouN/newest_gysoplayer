@@ -115,8 +115,7 @@ void logData(uint8_t *data, int data_size) {
 }
 
 
-void encodeVideo(GySoPlayer * gysoplayer, AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
-                 FILE *outfile) {
+void encodeVideo(GySoPlayer * gysoplayer, AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt) {
     int ret;
 
     /* send the frame to the encoder */
@@ -131,122 +130,124 @@ void encodeVideo(GySoPlayer * gysoplayer, AVCodecContext *enc_ctx, AVFrame *fram
 
     while (ret >= 0) {
         ret = avcodec_receive_packet(enc_ctx, pkt);
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF){
+            LOGI("waiting ......")
             return;
+        }
         else if (ret < 0) {
             LOGE("Error during encoding\n");
             return;
         }
 
         LOGI("Write packet %3" PRId64" (size=%5d)\n", pkt->pts, pkt->size);
-        fwrite(pkt->data, 1, pkt->size, outfile);
         if(gysoplayer && gysoplayer->isPacketCallbackEnabled && gysoplayer->callbackHelper){
             gysoplayer->callbackHelper->onPacketCallback(THREAD_CHILD, pkt->data, pkt->size);
         }
-//        logData(pkt->data, pkt->size);
+        logData(pkt->data, pkt->size);
+//        gysoplayer->show_frame(enc_ctx, frame);
         av_packet_unref(pkt);
     }
 }
 
-void covert_img2video(GySoPlayer * gysoplayer, const char *filename, const AVFrame *decodeFrame) {
-    const AVCodec *codec;
-    AVCodecContext *c = nullptr;
-    int i, ret, x, y;
-    FILE *f;
-    AVFrame *frame;
-    AVPacket *pkt;
-    uint8_t endcode[] = {0, 0, 1, 0xb7};
+int covert_img2video(GySoPlayer* player, const char* videoPath, AVFrame* frame) {
+    int ret = 0;
 
-    /* find the mpeg1video encoder */
-    const char *codec_name = "libx264";
-    AVCodecID codecId = AV_CODEC_ID_H264;
-    codec = avcodec_find_encoder(codecId);
+    // Initialize FFmpeg
+    AVFormatContext* formatCtx = nullptr;
+    AVStream* videoStream = nullptr;
+    AVCodecContext* codecCtx = nullptr;
+    const AVCodec* codec = nullptr;
+
+
+    // Initialize output format context
+    ret = avformat_alloc_output_context2(&formatCtx, nullptr, nullptr, videoPath);
+    if (ret < 0 || !formatCtx) {
+        LOGE("Could not create output context for video");
+        return ret;
+    }
+
+    // Find the H.264 encoder
+    codec = avcodec_find_encoder(AV_CODEC_ID_H264);
     if (!codec) {
-        LOGE("Codec '%s' not found\n", codec_name);
-        return;
-    }
-    LOGE("Codec '%s found!!!!\n", codec_name);
-    c = avcodec_alloc_context3(codec);
-    if (!c) {
-        LOGE("Could not allocate video codec context\n");
-        return;
+        LOGE("H.264 encoder not found");
+        return AVERROR_ENCODER_NOT_FOUND;
     }
 
-    pkt = av_packet_alloc();
-    if (!pkt)
-        return;
-    c->bit_rate = 400000;
-    c->width = decodeFrame->width;
-    c->height = decodeFrame->height;
-    /* frames per second */
-    c->time_base = (AVRational) {1, 25};
-    c->framerate = (AVRational) {25, 1};
-    c->gop_size = 10;
-    c->max_b_frames = 1;
-    c->pix_fmt = AV_PIX_FMT_YUV420P;
+    // Create new stream in the format context
+    videoStream = avformat_new_stream(formatCtx, codec);
+    if (!videoStream) {
+        LOGE("Failed to create video stream");
+        return AVERROR_UNKNOWN;
+    }
 
-    if (codec->id == AV_CODEC_ID_H264)
-        av_opt_set(c->priv_data, "preset", "slow", 0);
+    // Allocate and initialize codec context
+    codecCtx = avcodec_alloc_context3(codec);
+    if (!codecCtx) {
+        LOGE("Failed to allocate codec context for video");
+        return AVERROR(ENOMEM);
+    }
 
-    /* open it */
-    ret = avcodec_open2(c, codec, nullptr);
+    // Set codec parameters
+    codecCtx->bit_rate = 2000000;  // Set video bitrate (adjust as needed)
+    codecCtx->width = frame->width;
+    codecCtx->height = frame->height;
+    codecCtx->time_base = (AVRational){1, 25}; // 25 fps
+    codecCtx->framerate = (AVRational){25, 1}; // 25 fps
+    codecCtx->gop_size = 10;  // Group of pictures size (keyframe interval)
+    codecCtx->max_b_frames = 1;  // B frames (not too many)
+    codecCtx->pix_fmt = AV_PIX_FMT_YUV420P; // H.264 typically uses YUV420P
+
+    // Open the codec
+    ret = avcodec_open2(codecCtx, codec, nullptr);
     if (ret < 0) {
-        LOGE("Could not open codec: %s\n", av_err2str(ret));
-        return;
+        LOGE("Failed to open codec for encoding");
+        return ret;
     }
 
-    f = fopen(filename, "rb");
-    if (!f) {
-        LOGE("Could not open %s\n", filename);
-        return;
-    }
+    // Allocate a packet for encoding
+    AVPacket *packet = av_packet_alloc();
+    packet->data = nullptr;
+    packet->size = 0;
 
-    frame = av_frame_alloc();
-    if (!frame) {
-        LOGE("Could not allocate video frame\n");
-        return;
-    }
-    frame->format = c->pix_fmt;
-    frame->width = c->width;
-    frame->height = c->height;
-
-    ret = av_frame_get_buffer(frame, 0);
-    if (ret < 0) {
-        LOGE("Could not allocate the video frame data\n");
-        return ;
-    }
-
-    /* encodeVideo 1 second of video */
-    for (i = 0; i < 25; i++) {
-        fflush(stdout);
-        ret = av_frame_make_writable(frame);
-        if (ret < 0)
-            exit(1);
-        /* Y */
-        for (y = 0; y < c->height; y++) {
-            for (x = 0; x < c->width; x++) {
-                frame->data[0][y * frame->linesize[0] + x] = x + y + i * 3;
-            }
+    for (int i = 0; i < 100; i++) {
+        // Create a frame in the proper pixel format (YUV420P)
+        AVFrame* yuvFrame = av_frame_alloc();
+        yuvFrame->pts = i;
+        if (!yuvFrame) {
+            LOGE("Failed to allocate YUV frame");
+            return AVERROR(ENOMEM);
+        }
+        yuvFrame->format = AV_PIX_FMT_YUV420P;
+        yuvFrame->width = frame->width;
+        yuvFrame->height = frame->height;
+        LOGI("AVFrame yuvFrame format: %d  img format: %d ", yuvFrame->format, frame->format)
+        printf("AVFrame format: %d\n", yuvFrame->format);
+        ret = av_image_alloc(yuvFrame->data, yuvFrame->linesize, yuvFrame->width, yuvFrame->height, AV_PIX_FMT_YUV420P, 1);
+        if (ret < 0) {
+            LOGE("Failed to allocate YUV frame buffer");
+            return ret;
         }
 
-        /* Cb and Cr */
-        for (y = 0; y < c->height / 2; y++) {
-            for (x = 0; x < c->width / 2; x++) {
-                frame->data[1][y * frame->linesize[1] + x] = 128 + y + i * 2;
-                frame->data[2][y * frame->linesize[2] + x] = 64 + x + i * 5;
-            }
+        // Convert the image from its format (likely RGB) to YUV420P for H.264 encoding
+        SwsContext* swsCtx = sws_getContext(frame->width, frame->height, (AVPixelFormat)frame->format,
+                                            yuvFrame->width, yuvFrame->height, AV_PIX_FMT_YUV420P,
+                                            0, nullptr, nullptr, nullptr);
+        if (!swsCtx) {
+            LOGE("Failed to create sws context for image format conversion");
+            return AVERROR_UNKNOWN;
         }
-
-        frame->pts = i;
-        encodeVideo(gysoplayer, c, frame, pkt, f);
+        sws_scale(swsCtx, frame->data, frame->linesize, 0, frame->height, yuvFrame->data, yuvFrame->linesize);
+        sws_freeContext(swsCtx);
+        LOGI("Frame dimensions: %d x %d, Format: %d\n", frame->width, frame->height, frame->format);
+        encodeVideo(player, codecCtx, yuvFrame, packet);
+        av_frame_free(&yuvFrame);
     }
-
-    /* flush the encoder */
-    encodeVideo(gysoplayer, c, nullptr, pkt, f);
-    fclose(f);
-    avcodec_free_context(&c);
-    av_frame_free(&frame);
-    av_packet_free(&pkt);
+//    encodeVideo(player, codecCtx, nullptr, packet);
+    av_packet_free(&packet);
+    avcodec_free_context(&codecCtx);
+    avformat_close_input(&formatCtx);
+    avformat_free_context(formatCtx);
+    return ret;
 }
 
 
@@ -299,9 +300,9 @@ int GySoPlayer::deal_picture_file() {
                 break;
             }
 
-            LOGI("Decoded image frame: width=%d, height=%d", frame->width, frame->height);
+            LOGI("Decoded image frame: width=%d, height=%d nonono", frame->width, frame->height);
             // 将解码的图像帧传递给渲染模块
-            show_frame(codecCtx, frame);
+          show_frame(codecCtx, frame);
             break;
         }
         av_packet_unref(packet);
@@ -398,6 +399,11 @@ int GySoPlayer::prepareForCamera() {
     videoChannel = new VideoChannel(0, ctx, time_base, fps);
     videoChannel->setRenderCallback(renderCallback);
     videoChannel->parser = parser;
+
+    av_opt_set(ctx->priv_data, "tune", "zerolatency", 0); // Adjust codec settings for low-latency
+    av_opt_set(ctx->priv_data, "preset", "ultrafast", 0); // Faster encoding settings for lower delay
+    av_opt_set(ctx->priv_data, "flags", "+low_delay", 0); // Enable low-latency flags for decoding
+
     return 0;
 }
 
