@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "GysoPlayerApplication"
 include(":app")
 include(":gysoplayer")
+include(":videohandlerlib")

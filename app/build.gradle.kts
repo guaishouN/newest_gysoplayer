@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "com.gyso.gysoplayerapplication"
-        minSdk = 24
+        minSdk = 28
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -48,6 +48,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
     implementation(project(":gysoplayer"))
+    implementation(project(":videohandlerlib"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
