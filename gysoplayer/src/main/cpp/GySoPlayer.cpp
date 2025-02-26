@@ -131,7 +131,7 @@ void encodeVideo(GySoPlayer * gysoplayer, AVCodecContext *enc_ctx, AVFrame *fram
     while (ret >= 0) {
         ret = avcodec_receive_packet(enc_ctx, pkt);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF){
-            LOGI("waiting ......")
+            av_usleep(30000);
             return;
         }
         else if (ret < 0) {
@@ -454,6 +454,53 @@ int isMp4LocalSource(char *videoPath) {
     return 0;
 }
 
+/**
+ * 封装MP4的sps pps帧
+ * @param ex extradata
+ * @param ex_size 长度
+ */
+void GySoPlayer::dealMp4SpsPps(uint8_t *ex, int ex_size) const{
+    AVPacket spsPacket, ppsPacket;
+    uint8_t startCode[4] = {0x00, 0x00, 0x00, 0x01};
+
+    // extradata;第6字节后5位表示SPS个数，通常为1，这里就省略判断处理，严谨期间还是要判断
+    // 直接 取第7 8 俩字节作为SPS长度
+    int spsLength = (ex[6] << 8) | ex[7];
+
+    // x[8+spsLength]表示PPS个数，通常为1，这里就省略判断处理
+    // 取接下来两位作为PPS长度
+    int ppsLength = (ex[8 + spsLength + 1] << 8) | ex[8 + spsLength + 2];
+
+    // 为spsPacket ppsPacket的data分配内存，类似malloc
+    // 如果只是为了保存文件，可以不使用pkt结构，直接malloc就行
+    // 分配的空间为sps或pps长度加上4字节的起始码
+    av_new_packet(&spsPacket, spsLength + 4);
+    av_new_packet(&ppsPacket, ppsLength + 4);
+    spsPacket.size = spsLength + 4;
+    ppsPacket.size = ppsLength + 4;
+
+    // 给SPS拼前4字节起始码
+    memcpy(spsPacket.data, startCode, 4);
+
+    // 把SPS数据拼在起始码后面
+    memcpy(spsPacket.data + 4, ex + 8, spsLength);
+
+    // 给PPS拼前4字节起始码
+    memcpy(ppsPacket.data, startCode, 4);
+
+    // 把PPS数据拼在起始码后面
+    memcpy(ppsPacket.data + 4, ex + 8 + spsLength + 2 + 1, ppsLength);
+
+    //打印数据
+    logData(ex, ex_size);
+    logData(spsPacket.data, spsPacket.size);
+    logData(ppsPacket.data, ppsPacket.size);
+    if(isPacketCallbackEnabled && callbackHelper){
+        callbackHelper->onPacketCallback(THREAD_CHILD,spsPacket.data, spsPacket.size);
+        callbackHelper->onPacketCallback(THREAD_CHILD,ppsPacket.data, ppsPacket.size);
+    }
+}
+
 void GySoPlayer::_prepare() {
     LOGI("prepare %s", videoPath);
     //如果播放的是摄像头数据
@@ -556,12 +603,15 @@ void GySoPlayer::_prepare() {
                 LOGI("prepare get video");
                 continue;
             }
-            LOGI("prepare get video1");
+            LOGI("prepare get video1 %d %d", avCodecParameters->codec_id, AV_CODEC_ID_H264);
             AVRational frame_rate = stream->avg_frame_rate;
             int fps = static_cast<int>(av_q2d(frame_rate));
             videoChannel = new VideoChannel(i, avCodecContext, time_base, fps);
             videoChannel->setRenderCallback(renderCallback);
             videoChannel->isMp4LocalSource = isMp4LocalSource(videoPath);
+            if(videoChannel->isMp4LocalSource){
+                dealMp4SpsPps(avCodecContext->extradata, avCodecContext->extradata_size);
+            }
             //如果没有音频就在视频中回调进度给UI
             if (!duration) {
                 //直播 不需要回调进度给Java
@@ -632,6 +682,43 @@ void GySoPlayer::setWinWidthAndHeight(int _winWidth, int _winHeight) {
     this->winHeight = _winHeight;
 }
 
+void GySoPlayer::dealMp4Nal(uint8_t *data) const{
+    // 下面处理读到pkt中的数据
+    uint8_t startCode[4] = {0x00, 0x00, 0x00, 0x01};
+    int nalLength = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+// 分配 AVPacket
+    AVPacket *tmpPacket = av_packet_alloc();
+    if (!tmpPacket) {
+        // 处理分配失败的情况z
+        LOGE( "Failed to allocate AVPacket\n");
+        return ;
+    }
+
+   // 分配数据缓冲区
+    tmpPacket->data = (uint8_t*)av_malloc(nalLength + 4);
+    if (!tmpPacket->data) {
+        // 处理分配失败的情况
+        LOGE("Failed to allocate data buffer\n");
+        av_packet_free(&tmpPacket);
+        return ;
+    }
+
+   // 设置数据大小
+    tmpPacket->size = nalLength + 4;
+
+  // 初始化数据缓冲区（如果需要）
+    memset(tmpPacket->data, 0, nalLength + 4);
+    if (nalLength > 0) {
+        memcpy(tmpPacket->data, startCode, 4);  // 拼起始码
+        memcpy(tmpPacket->data+4, data+4, nalLength);
+        tmpPacket->size = nalLength + 4; // 长度为nal长度+起始码4
+        if(isPacketCallbackEnabled && callbackHelper){
+            callbackHelper->onPacketCallback(THREAD_CHILD, tmpPacket->data, tmpPacket->size);
+        }
+    }
+    av_packet_free(&tmpPacket);
+}
+
 /**
  * 在子线程中解码
  * 开始播放
@@ -660,7 +747,11 @@ void GySoPlayer::_start() {
             //视频
             if (videoChannel && videoChannel->stream_index == packet->stream_index) {
                 if(isPacketCallbackEnabled && callbackHelper){
-                    callbackHelper->onPacketCallback(THREAD_CHILD, packet->data, packet->size);
+                    if(videoChannel->isMp4LocalSource){
+                        dealMp4Nal(packet->data);
+                    } else{
+                        callbackHelper->onPacketCallback(THREAD_CHILD, packet->data, packet->size);
+                    }
                 }
                 videoChannel->packets.push(packet);
                 //音频

@@ -54,11 +54,11 @@ public:
 
     int stream_index;
     bool isPlaying;
-    AVCodecContext *pContext = 0;
+    AVCodecContext *pContext = nullptr;
     SafeQueue<AVPacket *> packets;
     SafeQueue<AVFrame *> frames;
     AVRational time_base;
-    CallbackHelper *callbackHelper= 0;;
+    CallbackHelper *callbackHelper= nullptr;
     double audio_time;
 };
 

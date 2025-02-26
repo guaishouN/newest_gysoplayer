@@ -72,6 +72,8 @@ private:
     int duration;
     pthread_mutex_t seek_mutex;
     pthread_t pid_stop;
+    void dealMp4SpsPps(uint8_t *ex, int ex_size) const;
+    void dealMp4Nal(uint8_t *data) const;
 };
 
 
